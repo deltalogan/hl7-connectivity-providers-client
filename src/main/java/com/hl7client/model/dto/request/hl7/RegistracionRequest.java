@@ -9,7 +9,7 @@ public class RegistracionRequest {
     // Datos de operación
     // ===============================
 
-    private ModoRegistracion modo;   // @modo char(1)
+    private String modo;   // @modo char(1)
     private String creden;           // @creden char(23)
     private Integer tipo;            // @tipo tinyint
     private String alta;             // @alta datetime
@@ -66,7 +66,7 @@ public class RegistracionRequest {
     // GETTERS
     // ===============================
 
-    public ModoRegistracion getModo() {
+    public String getModo() {
         return modo;
     }
 
@@ -178,7 +178,7 @@ public class RegistracionRequest {
     // SETTERS
     // ===============================
 
-    public void setModo(ModoRegistracion modo) {
+    public void setModo(String modo) {
         this.modo = modo;
     }
 

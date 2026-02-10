@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class CancelacionRequest {
 
     // ---------- Operación ----------
-    private ModoCancelacion modo;     // "N"
+    private String modo;     // "N"
     private Long creden;              // 7180171001151
     private Integer tipo;             // 2
     private String alta;              // puede venir vacío
@@ -15,7 +15,7 @@ public class CancelacionRequest {
     // ---------- Cancelación ----------
     private Integer ticketExt;        // 0
     private Integer cancelCab;        // nullable
-    private ModoCancelacion cancelModo; // "N"
+    private String cancelModo; // "N"
     private Integer errorExt;          // nullable
 
     // ---------- Técnica ----------
@@ -31,7 +31,7 @@ public class CancelacionRequest {
 
     // ---------- GETTERS ----------
 
-    public ModoCancelacion getModo() {
+    public String getModo() {
         return modo;
     }
 
@@ -59,7 +59,7 @@ public class CancelacionRequest {
         return cancelCab;
     }
 
-    public ModoCancelacion getCancelModo() {
+    public String getCancelModo() {
         return cancelModo;
     }
 
@@ -89,7 +89,7 @@ public class CancelacionRequest {
 
     // ---------- SETTERS ----------
 
-    public void setModo(ModoCancelacion modo) {
+    public void setModo(String modo) {
         this.modo = modo;
     }
 

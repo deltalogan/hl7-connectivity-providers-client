@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class ElegibilidadRequest {
 
     // --- Datos de operación ---
-    private ModoElegibilidad modo;   // char(1)
+    private String modo;   // char(1)
     private String creden;           // char(19)
     private String alta;             // yyyy-MM-dd'T'HH:mm:ss
     private String fecdif;           // yyyy-MM-dd
@@ -26,7 +26,7 @@ public class ElegibilidadRequest {
     private Integer rechaExt;
 
     // ---------- GETTERS ----------
-    public ModoElegibilidad getModo() {
+    public String getModo() {
         return modo;
     }
 
@@ -75,7 +75,7 @@ public class ElegibilidadRequest {
     }
 
     // ---------- SETTERS ----------
-    public void setModo(ModoElegibilidad modo) {
+    public void setModo(String modo) {
         this.modo = modo;
     }
 

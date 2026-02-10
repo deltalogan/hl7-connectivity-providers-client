@@ -5,7 +5,7 @@ import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.hl7client.controller.Hl7Controller;
 import com.hl7client.model.dto.request.hl7.CancelacionRequest;
 import com.hl7client.model.dto.request.hl7.Manual;
-import com.hl7client.model.dto.request.hl7.ModoCancelacion;
+import com.hl7client.model.dto.response.hl7.CancelacionCabecera;
 import com.hl7client.model.dto.response.hl7.CancelacionResponse;
 import com.hl7client.model.result.Hl7Result;
 import com.hl7client.ui.util.AcceptAction;
@@ -52,18 +52,23 @@ public class CancelacionDialog extends JDialog {
 
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
 
-        // Foco inicial
+        // Valores FIJOS obligatorios - se asignan después de initComponents()
+        modoTextField.setText("N");
+        modoTextField.setEnabled(false);
+
+        tipoTextField.setText("90");
+        tipoTextField.setEnabled(false);
+
+        // Foco inicial (modo está deshabilitado, pasamos al siguiente campo editable)
         SwingUtilities.invokeLater(() ->
-                modoTextField.requestFocusInWindow()
+                credenTextField.requestFocusInWindow()
         );
     }
 
     // =========================================================
     // DatePicker
     // =========================================================
-
     private void initDatePicker() {
-
         DatePickerSettings settings = new DatePickerSettings();
         settings.setFormatForDatesCommonEra("yyyyMMdd");
         settings.setAllowKeyboardEditing(false);
@@ -77,9 +82,7 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     // Actions
     // =========================================================
-
     private void initActions() {
-
         Action acceptAction = new AcceptAction<>(
                 "Accept",
                 this,
@@ -102,13 +105,11 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     // Accept workflow
     // =========================================================
-
     private Hl7Result<CancelacionResponse> doCancelacion() {
         return hl7Controller.consultarCancelacion(buildRequest());
     }
 
     private void onCancelacionResult(Hl7Result<CancelacionResponse> result) {
-
         if (result == null) {
             JOptionPane.showMessageDialog(
                     this,
@@ -121,7 +122,7 @@ public class CancelacionDialog extends JDialog {
 
         String transac = result.getData()
                 .map(CancelacionResponse::getCabecera)
-                .map(c -> c.getTransac())
+                .map(CancelacionCabecera::getTransac)
                 .map(String::valueOf)
                 .orElse(null);
 
@@ -141,14 +142,14 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     // Build Request
     // =========================================================
-
     private CancelacionRequest buildRequest() {
-
         CancelacionRequest request = new CancelacionRequest();
 
-        request.setModo(enumValue(cancelModoTextField, ModoCancelacion.class));
+        // Valores FIJOS (leídos de campos deshabilitados)
+        request.setModo(textValue(modoTextField));  // "N"
+        request.setTipo(intValue(tipoTextField));   // 90
+
         request.setCreden(longValue(credenTextField));
-        request.setTipo(intValue(tipoTextField));
         request.setAlta(toHl7(altaDatePicker.getDate()));
         request.setManual(manualValue(manualTextField));
 
@@ -178,7 +179,6 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     // Helpers
     // =========================================================
-
     private static String toHl7(LocalDate date) {
         return date != null ? date.format(HL7_DATE_FORMAT) : "";
     }
@@ -188,19 +188,16 @@ public class CancelacionDialog extends JDialog {
     }
 
     private Integer intValue(JTextField field) {
-        return field.getText().isBlank()
-                ? null
-                : Integer.parseInt(field.getText().trim());
+        String txt = field.getText().trim();
+        return txt.isBlank() ? null : Integer.parseInt(txt);
     }
 
     private Long longValue(JTextField field) {
-        return field.getText().isBlank()
-                ? null
-                : Long.parseLong(field.getText().trim());
+        String txt = field.getText().trim();
+        return txt.isBlank() ? null : Long.parseLong(txt);
     }
 
     private Manual manualValue(JTextField field) {
-
         if (field.getText().isBlank()) {
             return null;
         }
@@ -215,21 +212,10 @@ public class CancelacionDialog extends JDialog {
         };
     }
 
-    private <E extends Enum<E>> E enumValue(
-            JTextField field,
-            Class<E> enumType
-    ) {
-        return field.getText().isBlank()
-                ? null
-                : Enum.valueOf(enumType, field.getText().trim().toUpperCase());
-    }
-
     // =========================================================
     // Result
     // =========================================================
-
     private void mostrarResultado(CancelacionResponse response) {
-
         StringBuilder sb = new StringBuilder();
 
         sb.append("Resultado: ")
@@ -256,9 +242,7 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     // Close behavior
     // =========================================================
-
     private void installCloseBehavior() {
-
         Action cancelAction = DialogUtils.createDisposeAction(this);
         cancelButton.setAction(cancelAction);
         DialogUtils.installCloseAction(this, cancelAction);
@@ -266,7 +250,7 @@ public class CancelacionDialog extends JDialog {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         modoLabel = new JLabel();
         modoTextField = new JTextField();
         credenLabel = new JLabel();
@@ -458,7 +442,7 @@ public class CancelacionDialog extends JDialog {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JLabel modoLabel;
     private JTextField modoTextField;
     private JLabel credenLabel;

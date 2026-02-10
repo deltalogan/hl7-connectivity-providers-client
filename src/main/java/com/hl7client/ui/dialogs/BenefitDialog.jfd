@@ -5,27 +5,31 @@ new FormModel {
 	root: new FormRoot {
 		add( new FormWindow( "javax.swing.JDialog", new FormLayoutManager( class java.awt.GridBagLayout ) {
 			"$columnSpecs": "0:1.0, 0"
-			"$rowSpecs": "0, 0, 0, 0:1.0"
+			"$rowSpecs": "0, 0, 0, 0:1.0, 0"
 			"$hGap": 5
 			"$vGap": 5
 			"$alignLeft": true
 			"$alignTop": true
 		} ) {
 			name: "this"
-			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
-				name: "benefitScrollPane"
-				add( new FormComponent( "javax.swing.JTable" ) {
-					name: "benefitTable"
-				} )
-			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridheight": 4
-			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "summaryLabel"
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "insertButton"
 				"text": "Insert"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridx": 1
 				"vAlign": 1
+			} )
+			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
+				name: "benefitScrollPane"
+				add( new FormComponent( "javax.swing.JTable" ) {
+					name: "benefitTable"
+				} )
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridheight": 3
+				"gridy": 1
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "updateButton"
@@ -42,11 +46,18 @@ new FormModel {
 				"gridy": 2
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "acceptButton"
+				"text": "Accept"
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridy": 4
+				"hAlign": 2
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "cancelButton"
 				"text": "Cancel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridx": 1
-				"gridy": 3
+				"gridy": 4
 				"vAlign": 3
 			} )
 		}, new FormLayoutConstraints( null ) {

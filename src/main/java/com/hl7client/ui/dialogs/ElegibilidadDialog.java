@@ -5,7 +5,6 @@ import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.hl7client.controller.Hl7Controller;
 import com.hl7client.model.dto.request.hl7.ElegibilidadRequest;
 import com.hl7client.model.dto.request.hl7.Manual;
-import com.hl7client.model.dto.request.hl7.ModoElegibilidad;
 import com.hl7client.model.dto.response.hl7.ElegibilidadResponse;
 import com.hl7client.model.result.Hl7Result;
 import com.hl7client.ui.util.AcceptAction;
@@ -53,18 +52,20 @@ public class ElegibilidadDialog extends JDialog {
 
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
 
-        // Foco inicial
+        // Valores FIJOS obligatorios - se asignan después de initComponents()
+        modoTextField.setText("N");
+        modoTextField.setEnabled(false);
+
+        // Foco inicial (modo está deshabilitado, pasamos al siguiente campo editable)
         SwingUtilities.invokeLater(() ->
-                modoTextField.requestFocusInWindow()
+                credenTextField.requestFocusInWindow()
         );
     }
 
     // =========================================================
     // DatePickers
     // =========================================================
-
     private void initDatePickers() {
-
         DatePickerSettings altaSettings = new DatePickerSettings();
         altaSettings.setFormatForDatesCommonEra("yyyyMMdd");
         altaSettings.setAllowKeyboardEditing(false);
@@ -87,9 +88,7 @@ public class ElegibilidadDialog extends JDialog {
     // =========================================================
     // Actions
     // =========================================================
-
     private void initActions() {
-
         Action acceptAction = new AcceptAction<>(
                 "Accept",
                 this,
@@ -113,13 +112,11 @@ public class ElegibilidadDialog extends JDialog {
     // =========================================================
     // Accept workflow
     // =========================================================
-
     private Hl7Result<ElegibilidadResponse> doElegibilidad() {
         return hl7Controller.consultarElegibilidad(buildRequest());
     }
 
     private void onElegibilidadResult(Hl7Result<ElegibilidadResponse> result) {
-
         if (result == null) {
             JOptionPane.showMessageDialog(
                     this,
@@ -150,74 +147,26 @@ public class ElegibilidadDialog extends JDialog {
     // =========================================================
     // Build Request
     // =========================================================
-
     private ElegibilidadRequest buildRequest() {
-
         ElegibilidadRequest request = new ElegibilidadRequest();
 
-        if (!modoTextField.getText().isBlank()) {
-            request.setModo(
-                    ModoElegibilidad.valueOf(
-                            modoTextField.getText().trim().toUpperCase()
-                    )
-            );
-        }
-
-        if (!credenTextField.getText().isBlank()) {
-            request.setCreden(credenTextField.getText().trim());
-        }
-
+        // Valores FIJOS (leídos de campos deshabilitados)
+        request.setModo(textValue(modoTextField));  // "N"
+        request.setCreden(textValue(credenTextField));
         request.setAlta(toHl7(altaDatePicker.getDate()));
         request.setFecdif(toHl7(fecdifDatePicker.getDate()));
-
-        if (!manualTextField.getText().isBlank()) {
-            String value = manualTextField.getText().trim().toUpperCase();
-
-            switch (value) {
-                case "0" -> request.setManual(Manual.MANUAL);
-                case "C" -> request.setManual(Manual.CAPITADOR);
-                case "L" -> request.setManual(Manual.COMSULTA);
-                default -> throw new IllegalArgumentException(
-                        "Valor inválido para Manual: " + value
-                );
-            }
-        }
-
-        if (!ticketExtTextField.getText().isBlank()) {
-            request.setTicketExt(
-                    Integer.parseInt(ticketExtTextField.getText().trim())
-            );
-        }
-
-        if (!termIdTextField.getText().isBlank()) {
-            request.setTermId(termIdTextField.getText().trim());
-        }
-
-        if (!interNroTextField.getText().isBlank()) {
-            request.setInterNro(
-                    Integer.parseInt(interNroTextField.getText().trim())
-            );
-        }
-
-        if (!cuitTextField.getText().isBlank()) {
-            request.setCuit(cuitTextField.getText().trim());
-        }
-
-        if (!oriMatriTextField.getText().isBlank()) {
-            request.setOriMatri(oriMatriTextField.getText().trim());
-        }
-
-        if (!autorizTextField.getText().isBlank()) {
-            request.setAutoriz(
-                    Integer.parseInt(autorizTextField.getText().trim())
-            );
-        }
-
-        if (!rechaExtTextField.getText().isBlank()) {
-            request.setRechaExt(
-                    Integer.parseInt(rechaExtTextField.getText().trim())
-            );
-        }
+        request.setManual(manualValue(manualTextField));
+        request.setTicketExt(intValue(ticketExtTextField));
+        request.setTermId(textValue(termIdTextField));
+        request.setInterNro(intValue(interNroTextField));
+        request.setCuit(textValue(cuitTextField));
+        request.setOriMatri(textValue(oriMatriTextField));
+        request.setAutoriz(
+                autorizTextField.getText().isBlank()
+                        ? 0
+                        : intValue(autorizTextField)
+        );
+        request.setRechaExt(intValue(rechaExtTextField));
 
         return request;
     }
@@ -225,17 +174,34 @@ public class ElegibilidadDialog extends JDialog {
     // =========================================================
     // HL7 helper
     // =========================================================
-
     private static String toHl7(LocalDate date) {
         return date != null ? date.format(HL7_DATE_FORMAT) : "";
+    }
+
+    private String textValue(JTextField field) {
+        return field.getText().isBlank() ? null : field.getText().trim();
+    }
+
+    private Integer intValue(JTextField field) {
+        String txt = field.getText().trim();
+        return txt.isBlank() ? null : Integer.parseInt(txt);
+    }
+
+    private Manual manualValue(JTextField field) {
+        String txt = field.getText().trim().toUpperCase();
+        if (txt.isBlank()) return null;
+        return switch (txt) {
+            case "0" -> Manual.MANUAL;
+            case "C" -> Manual.CAPITADOR;
+            case "L" -> Manual.COMSULTA;
+            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
+        };
     }
 
     // =========================================================
     // Result
     // =========================================================
-
     private void mostrarResultado(ElegibilidadResponse response) {
-
         String mensaje =
                 "Afiliado: " + response.getApeNom() + "\n" +
                         "Plan: " + response.getPlanCodi() + "\n" +
@@ -253,9 +219,7 @@ public class ElegibilidadDialog extends JDialog {
     // =========================================================
     // Close behavior
     // =========================================================
-
     private void installCloseBehavior() {
-
         Action cancelAction = DialogUtils.createDisposeAction(this);
         cancelButton.setAction(cancelAction);
         DialogUtils.installCloseAction(this, cancelAction);
@@ -263,7 +227,7 @@ public class ElegibilidadDialog extends JDialog {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         modoLabel = new JLabel();
         modoTextField = new JTextField();
         credenLabel = new JLabel();
@@ -442,7 +406,7 @@ public class ElegibilidadDialog extends JDialog {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JLabel modoLabel;
     private JTextField modoTextField;
     private JLabel credenLabel;

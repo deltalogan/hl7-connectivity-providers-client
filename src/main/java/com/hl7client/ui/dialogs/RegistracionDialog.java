@@ -3,10 +3,14 @@ package com.hl7client.ui.dialogs;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.hl7client.controller.Hl7Controller;
+import com.hl7client.model.Hl7Constants;
+import com.hl7client.model.benefit.BenefitItem;
+import com.hl7client.model.benefit.BenefitRequestMapper;
 import com.hl7client.model.dto.request.hl7.Manual;
-import com.hl7client.model.dto.request.hl7.ModoRegistracion;
 import com.hl7client.model.dto.request.hl7.RegistracionRequest;
+import com.hl7client.model.dto.response.hl7.RegistracionCabecera;
 import com.hl7client.model.dto.response.hl7.RegistracionResponse;
+import com.hl7client.model.enums.TipoMensaje;
 import com.hl7client.model.result.Hl7Result;
 import com.hl7client.ui.util.AcceptAction;
 import com.hl7client.ui.util.DialogUtils;
@@ -18,21 +22,23 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class RegistracionDialog extends JDialog {
 
     private static final double SCREEN_RATIO = 0.75;
     private static final String SPLASH_PATH = "/icons/splash.gif";
-
-    private static final DateTimeFormatter HL7_DATE_FORMAT =
-            DateTimeFormatter.BASIC_ISO_DATE;
+    private static final DateTimeFormatter HL7_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final Hl7Controller hl7Controller;
 
-    // =========================
+    // Estado interno
+    private TipoMensaje tipoMensaje;
+    private final List<BenefitItem> benefits = new ArrayList<>();
+
     // DatePickers
-    // =========================
     private DatePicker altaDatePicker;
     private DatePicker fecdifDatePicker;
 
@@ -47,38 +53,54 @@ public class RegistracionDialog extends JDialog {
 
         initComponents();
         initDatePickers();
-        initMnemonics();
+        initTipoMensajeControls();
+
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
         initActions();
+        initShortcuts();
         installCloseBehavior();
-        initFocus();
+        initBenefitsAction();
+
+        // Valores FIJOS obligatorios
+        modoTextField.setText("N");
+        modoTextField.setEnabled(false);
+        tipoTextField.setText("90");
+        tipoTextField.setEnabled(false);
+
+        // Foco inicial
+        SwingUtilities.invokeLater(() -> credenTextField.requestFocusInWindow());
+
+        // Inicializar resumen
+        updateBenefitsSummary();
     }
 
-    // =========================================================
-    // Focus & mnemonics
-    // =========================================================
+    private void initTipoMensajeControls() {
+        tipoMensajeComboBox.setModel(new DefaultComboBoxModel<>(TipoMensaje.values()));
+        tipoMensajeComboBox.setSelectedItem(null);
 
-    private void initFocus() {
-        SwingUtilities.invokeLater(() ->
-                modoTextField.requestFocusInWindow()
-        );
+        tipoMensajeComboBox.addActionListener(e -> {
+            TipoMensaje nuevoTipo = (TipoMensaje) tipoMensajeComboBox.getSelectedItem();
+            if (nuevoTipo == null) return;
+
+            if (!benefits.isEmpty() && tipoMensaje != null && tipoMensaje != nuevoTipo) {
+                tipoMensajeComboBox.setSelectedItem(tipoMensaje);
+                JOptionPane.showMessageDialog(this,
+                        "No se puede cambiar el tipo de mensaje una vez que se han cargado prestaciones.\n" +
+                                "Limpie las prestaciones primero si desea cambiar el tipo.",
+                        "Tipo bloqueado",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            tipoMensaje = nuevoTipo;
+            updateBenefitsSummary();
+        });
     }
-
-    private void initMnemonics() {
-        acceptButton.setMnemonic(KeyEvent.VK_A);   // ALT + A
-        cancelButton.setMnemonic(KeyEvent.VK_C);   // ALT + C
-    }
-
-    // =========================================================
-    // DatePickers
-    // =========================================================
 
     private void initDatePickers() {
-
         DatePickerSettings altaSettings = new DatePickerSettings();
         altaSettings.setFormatForDatesCommonEra("yyyyMMdd");
         altaSettings.setAllowKeyboardEditing(false);
-
         altaDatePicker = new DatePicker(altaSettings);
         altaPanel.setLayout(new BorderLayout());
         altaPanel.add(altaDatePicker, BorderLayout.CENTER);
@@ -86,18 +108,124 @@ public class RegistracionDialog extends JDialog {
         DatePickerSettings fecdifSettings = new DatePickerSettings();
         fecdifSettings.setFormatForDatesCommonEra("yyyyMMdd");
         fecdifSettings.setAllowKeyboardEditing(false);
-
         fecdifDatePicker = new DatePicker(fecdifSettings);
         fecdifPanel.setLayout(new BorderLayout());
         fecdifPanel.add(fecdifDatePicker, BorderLayout.CENTER);
     }
 
-    // =========================================================
-    // Actions
-    // =========================================================
+    private void initBenefitsAction() {
+        viewEditBenefitsButton.addActionListener(e -> {
+            TipoMensaje effectiveTipo = tipoMensaje;
+
+            if (effectiveTipo == null) {
+                effectiveTipo = TipoMensaje.MEDICINA;
+                tipoMensajeComboBox.setSelectedItem(effectiveTipo);
+                tipoMensaje = effectiveTipo;
+                JOptionPane.showMessageDialog(this,
+                        "No había tipo de mensaje seleccionado. Se seleccionó 'Medicina' por defecto.\n" +
+                                "Puede cambiarlo antes de cargar prestaciones.",
+                        "Tipo por defecto",
+                        JOptionPane.INFORMATION_MESSAGE);
+                updateBenefitsSummary();
+            }
+
+            BenefitDialog dialog = getBenefitDialog(effectiveTipo);
+            dialog.setVisible(true);
+
+            // Cambio clave: solo actualizamos si el usuario confirmó (Accept)
+            if (dialog.isConfirmed()) {
+                benefits.clear();
+                benefits.addAll(dialog.getBenefits());
+                updateBenefitsSummary();
+            }
+            // Si canceló → no tocamos benefits (mantiene el estado anterior)
+        });
+    }
+
+    private BenefitDialog getBenefitDialog(TipoMensaje effectiveTipo) {
+        BenefitDialog dialog = new BenefitDialog(this, effectiveTipo, new ArrayList<>(benefits));
+
+        int maxChars = (effectiveTipo == TipoMensaje.ODONTOLOGIA)
+                ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
+                : Hl7Constants.MAX_LENGTH_MEDICINA;
+
+        String tipoDesc = (effectiveTipo == TipoMensaje.ODONTOLOGIA) ? "Odontología" : "Medicina";
+        dialog.setTitle("Gestión de Prestaciones - " + tipoDesc + " (máx. " + maxChars + " caracteres)");
+
+        return dialog;
+    }
+
+    private void updateBenefitsSummary() {
+        if (benefits.isEmpty()) {
+            benefitsSummaryLabel.setText("<html><i>Ninguna prestación cargada</i></html>");
+            benefitsSummaryLabel.setForeground(Color.GRAY);
+            benefitsSummaryLabel.setToolTipText("Haga clic en 'View / Edit Benefits' para agregar o editar prestaciones");
+            acceptButton.setEnabled(true);
+            return;
+        }
+
+        // Determinamos tipo (con chequeo de seguridad)
+        boolean isDental = benefits.get(0) instanceof com.hl7client.model.dental.DentalBenefit;
+        int maxChars = isDental ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA : Hl7Constants.MAX_LENGTH_MEDICINA;
+        int usedChars = benefits.stream().mapToInt(BenefitItem::length).sum();
+        int count = benefits.size();
+
+        double porcentaje = usedChars * 100.0 / maxChars;
+
+        String tipoText = isDental ? "odontológica" : "médica";
+        String restriccion = isDental ? " (máximo 1 permitida)" : "";
+
+        String text = String.format(
+                "<html>%d prestación%s %s<br>usadas <b>%d / %d</b> caracteres (%.1f%%)%s</html>",
+                count, (count == 1 ? "" : "es"), tipoText, usedChars, maxChars, porcentaje, restriccion
+        );
+
+        benefitsSummaryLabel.setText(text);
+
+        if (usedChars > maxChars) {
+            benefitsSummaryLabel.setForeground(Color.RED);
+            benefitsSummaryLabel.setToolTipText("<html><b>¡Excede el límite máximo permitido!</b><br>Corrija antes de aceptar la registración.</html>");
+        } else if (porcentaje > 90) {
+            benefitsSummaryLabel.setForeground(new Color(200, 80, 0));   // naranja oscuro
+            benefitsSummaryLabel.setToolTipText("<html>Muy cerca del límite máximo<br>(restan " + (maxChars - usedChars) + " caracteres)</html>");
+        } else if (porcentaje > 70) {
+            benefitsSummaryLabel.setForeground(new Color(180, 140, 0));  // ámbar
+            benefitsSummaryLabel.setToolTipText("<html>Acercándose al límite<br>(restan " + (maxChars - usedChars) + " caracteres)</html>");
+        } else if (isDental) {
+            benefitsSummaryLabel.setForeground(new Color(0, 140, 0));    // verde oscuro
+            benefitsSummaryLabel.setToolTipText("<html>Prestación odontológica válida<br>(solo 1 permitida)</html>");
+        } else {
+            benefitsSummaryLabel.setForeground(new Color(0, 100, 200));  // azul
+            benefitsSummaryLabel.setToolTipText("<html>Prestaciones médicas cargadas correctamente</html>");
+        }
+
+        updateAcceptButtonState();
+    }
+
+    private void updateAcceptButtonState() {
+        if (benefits.isEmpty()) {
+            acceptButton.setEnabled(true);
+            acceptButton.setToolTipText(null);
+            return;
+        }
+
+        boolean isDental = benefits.get(0) instanceof com.hl7client.model.dental.DentalBenefit;
+        int maxChars = isDental ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA : Hl7Constants.MAX_LENGTH_MEDICINA;
+        int usedChars = benefits.stream().mapToInt(BenefitItem::length).sum();
+
+        acceptButton.setEnabled(usedChars <= maxChars);
+
+        if (usedChars > maxChars) {
+            acceptButton.setToolTipText("No se puede aceptar: excede el límite de caracteres en prestaciones");
+        } else {
+            acceptButton.setToolTipText(null);
+        }
+    }
+
+    // Resto del código sin cambios (initActions, doRegistracion, buildRequest, etc.)
+    // ... (mantengo igual todo lo que no necesita modificación en esta ronda)
 
     private void initActions() {
-
         Action acceptAction = new AcceptAction<>(
                 "Accept",
                 this,
@@ -105,43 +233,43 @@ public class RegistracionDialog extends JDialog {
                 this::doRegistracion,
                 this::onRegistracionResult
         );
-
         acceptButton.setAction(acceptAction);
         getRootPane().setDefaultButton(acceptButton);
     }
 
-    // =========================================================
-    // Workflow
-    // =========================================================
+    private void initShortcuts() {
+        acceptButton.setMnemonic(KeyEvent.VK_A);   // ALT + A
+        cancelButton.setMnemonic(KeyEvent.VK_C);   // ALT + C
+    }
 
     private Hl7Result<RegistracionResponse> doRegistracion() {
+        if (tipoMensaje == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Debe seleccionar un tipo de mensaje (Odontología o Medicina).",
+                    "Tipo de mensaje requerido",
+                    JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+
         return hl7Controller.consultarRegistracion(buildRequest());
     }
 
     private void onRegistracionResult(Hl7Result<RegistracionResponse> result) {
-
         if (result == null) {
-            JOptionPane.showMessageDialog(
-                    this,
+            JOptionPane.showMessageDialog(this,
                     "Error técnico inesperado",
                     getTitle(),
-                    JOptionPane.ERROR_MESSAGE
-            );
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         String transac = result.getData()
                 .map(RegistracionResponse::getCabecera)
-                .map(c -> c.getTransac())
+                .map(RegistracionCabecera::getTransac)
                 .map(String::valueOf)
                 .orElse(null);
 
-        Hl7UiErrorHandler.mostrarResultado(
-                this,
-                result,
-                getTitle(),
-                transac
-        );
+        Hl7UiErrorHandler.mostrarResultado(this, result, getTitle(), transac);
 
         if (result.isOk() || result.isPartial()) {
             result.getData().ifPresent(this::mostrarResultado);
@@ -149,17 +277,13 @@ public class RegistracionDialog extends JDialog {
         }
     }
 
-    // =========================================================
-    // Build Request
-    // =========================================================
-
     private RegistracionRequest buildRequest() {
-
         RegistracionRequest request = new RegistracionRequest();
 
-        request.setModo(enumValue(modoTextField, ModoRegistracion.class));
-        request.setCreden(textValue(credenTextField));
+        request.setModo(textValue(modoTextField));
         request.setTipo(intValue(tipoTextField));
+
+        request.setCreden(textValue(credenTextField));
         request.setAlta(toHl7(altaDatePicker.getDate()));
         request.setFecdif(toHl7(fecdifDatePicker.getDate()));
         request.setManual(manualValue(manualTextField));
@@ -168,31 +292,13 @@ public class RegistracionDialog extends JDialog {
         request.setInterNro(intValue(interNroTextField));
         request.setCuit(textValue(cuitTextField));
         request.setOriMatri(textValue(oriMatriTextField));
-
         request.setAutoriz(
                 autorizTextField.getText().isBlank()
-                        ? 0
+                        ? Integer.valueOf(0)
                         : intValue(autorizTextField)
         );
-
         request.setIcd(textValue(icdTextField));
         request.setRechaExt(intValue(rechaExtTextField));
-        request.setParam1(
-                param1TextField.getText().isBlank()
-                        ? "0^*0*0**"
-                        : textValue(param1TextField)
-        );
-        request.setParam2(
-                param2TextField.getText().isBlank()
-                        ? ""
-                        : textValue(param2TextField)
-        );
-        request.setParam3(
-                param3TextField.getText().isBlank()
-                        ? ""
-                        : textValue(param3TextField)
-        );
-
         request.setTipoEfector(textValue(tipoEfectorTextField));
         request.setIdEfector(textValue(idEfectorTextField));
         request.setTipoPrescr(textValue(tipoPrescrTextField));
@@ -201,7 +307,11 @@ public class RegistracionDialog extends JDialog {
         request.setAckacept(textValue(ackaceptTextField));
         request.setAckackapl(textValue(ackackaplTextField));
         request.setConsulta(manualValue(consultaTextField));
-        request.setTipoMensaje(textValue(tipoMensajeTextField));
+
+        TipoMensaje actualTipoMensaje = tipoMensaje != null ? tipoMensaje : TipoMensaje.MEDICINA;
+        request.setTipoMensaje(actualTipoMensaje.getCodigoHl7());
+
+        BenefitRequestMapper.apply(request, benefits);
 
         if (!powerBuilderTextField.getText().isBlank()) {
             request.setPowerBuilder(
@@ -212,33 +322,18 @@ public class RegistracionDialog extends JDialog {
         return request;
     }
 
-    // =========================================================
-    // Result
-    // =========================================================
-
     private void mostrarResultado(RegistracionResponse response) {
-
         var cab = response.getCabecera();
-
         String mensaje =
                 "Afiliado: " + cab.getApeNom().trim() + "\n" +
                         "Plan: " + cab.getPlanCodi().trim() + "\n" +
                         "Edad: " + cab.getEdad() + "\n" +
                         "Sexo: " + cab.getSexo() + "\n" +
                         "PMI: " + (cab.getPmi() != null ? cab.getPmi() : "-");
-
-        JOptionPane.showMessageDialog(
-                this,
-                mensaje,
-                getTitle(),
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        JOptionPane.showMessageDialog(this, mensaje, getTitle(), JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // =========================================================
     // Helpers
-    // =========================================================
-
     private static String toHl7(LocalDate date) {
         return date != null ? date.format(HL7_DATE_FORMAT) : "";
     }
@@ -248,36 +343,20 @@ public class RegistracionDialog extends JDialog {
     }
 
     private Integer intValue(JTextField field) {
-        return field.getText().isBlank()
-                ? null
-                : Integer.parseInt(field.getText().trim());
+        String txt = field.getText().trim();
+        return txt.isBlank() ? null : Integer.parseInt(txt);
     }
 
     private Manual manualValue(JTextField field) {
-        if (field.getText().isBlank()) return null;
-
-        return switch (field.getText().trim().toUpperCase()) {
+        String txt = field.getText().trim().toUpperCase();
+        if (txt.isBlank()) return null;
+        return switch (txt) {
             case "0" -> Manual.MANUAL;
             case "C" -> Manual.CAPITADOR;
             case "L" -> Manual.COMSULTA;
-            default -> throw new IllegalArgumentException(
-                    "Valor inválido para Manual: " + field.getText()
-            );
+            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
         };
     }
-
-    private <E extends Enum<E>> E enumValue(
-            JTextField field,
-            Class<E> enumType
-    ) {
-        return field.getText().isBlank()
-                ? null
-                : Enum.valueOf(enumType, field.getText().trim().toUpperCase());
-    }
-
-    // =========================================================
-    // Close behavior
-    // =========================================================
 
     private void installCloseBehavior() {
         Action cancelAction = DialogUtils.createDisposeAction(this);
@@ -287,7 +366,7 @@ public class RegistracionDialog extends JDialog {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         modoLabel = new JLabel();
         modoTextField = new JTextField();
         credenLabel = new JLabel();
@@ -316,14 +395,11 @@ public class RegistracionDialog extends JDialog {
         icdTextField = new JTextField();
         rechaExtLabel = new JLabel();
         rechaExtTextField = new JTextField();
-        param1Label = new JLabel();
-        param1TextField = new JTextField();
-        param2Label = new JLabel();
-        param2TextField = new JTextField();
-        param3Label = new JLabel();
-        param3TextField = new JTextField();
+        viewEditBenefitsLabel = new JLabel();
+        viewEditBenefitsButton = new JButton();
         tipoEfectorLabel = new JLabel();
         tipoEfectorTextField = new JTextField();
+        benefitsSummaryLabel = new JLabel();
         idEfectorLabel = new JLabel();
         idEfectorTextField = new JTextField();
         tipoPrescrLabel = new JLabel();
@@ -343,7 +419,7 @@ public class RegistracionDialog extends JDialog {
         agRechaLabel = new JLabel();
         agRechaTextField = new JTextField();
         tipoMensajeLabel = new JLabel();
-        tipoMensajeTextField = new JTextField();
+        tipoMensajeComboBox = new JComboBox();
         powerBuilderLabel = new JLabel();
         powerBuilderTextField = new JTextField();
         acceptButton = new JButton();
@@ -501,41 +577,29 @@ public class RegistracionDialog extends JDialog {
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
-        //---- param1Label ----
-        param1Label.setText("param1:");
-        contentPane.add(param1Label, new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0,
+        //---- viewEditBenefitsLabel ----
+        viewEditBenefitsLabel.setText("View / Edit Benefits:");
+        contentPane.add(viewEditBenefitsLabel, new GridBagConstraints(0, 7, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
-            new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(param1TextField, new GridBagConstraints(1, 7, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 5), 0, 0));
 
-        //---- param2Label ----
-        param2Label.setText("param2:");
-        contentPane.add(param2Label, new GridBagConstraints(2, 7, 1, 1, 0.0, 0.0,
-            GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
-            new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(param2TextField, new GridBagConstraints(3, 7, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
-
-        //---- param3Label ----
-        param3Label.setText("param3:");
-        contentPane.add(param3Label, new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0,
-            GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
-            new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(param3TextField, new GridBagConstraints(1, 8, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+        //---- viewEditBenefitsButton ----
+        viewEditBenefitsButton.setText("View / Edit Benefits");
+        contentPane.add(viewEditBenefitsButton, new GridBagConstraints(1, 7, 1, 1, 0.0, 0.0,
+            GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
 
         //---- tipoEfectorLabel ----
         tipoEfectorLabel.setText("tipoEfector:");
-        contentPane.add(tipoEfectorLabel, new GridBagConstraints(2, 8, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoEfectorLabel, new GridBagConstraints(2, 7, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(tipoEfectorTextField, new GridBagConstraints(3, 8, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoEfectorTextField, new GridBagConstraints(3, 7, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
+        contentPane.add(benefitsSummaryLabel, new GridBagConstraints(1, 8, 1, 1, 0.0, 0.0,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- idEfectorLabel ----
         idEfectorLabel.setText("idEfector:");
@@ -623,8 +687,8 @@ public class RegistracionDialog extends JDialog {
         contentPane.add(tipoMensajeLabel, new GridBagConstraints(2, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(tipoMensajeTextField, new GridBagConstraints(3, 13, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+        contentPane.add(tipoMensajeComboBox, new GridBagConstraints(3, 13, 1, 1, 0.0, 0.0,
+            GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 0), 0, 0));
 
         //---- powerBuilderLabel ----
@@ -653,7 +717,7 @@ public class RegistracionDialog extends JDialog {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JLabel modoLabel;
     private JTextField modoTextField;
     private JLabel credenLabel;
@@ -682,14 +746,11 @@ public class RegistracionDialog extends JDialog {
     private JTextField icdTextField;
     private JLabel rechaExtLabel;
     private JTextField rechaExtTextField;
-    private JLabel param1Label;
-    private JTextField param1TextField;
-    private JLabel param2Label;
-    private JTextField param2TextField;
-    private JLabel param3Label;
-    private JTextField param3TextField;
+    private JLabel viewEditBenefitsLabel;
+    private JButton viewEditBenefitsButton;
     private JLabel tipoEfectorLabel;
     private JTextField tipoEfectorTextField;
+    private JLabel benefitsSummaryLabel;
     private JLabel idEfectorLabel;
     private JTextField idEfectorTextField;
     private JLabel tipoPrescrLabel;
@@ -709,7 +770,7 @@ public class RegistracionDialog extends JDialog {
     private JLabel agRechaLabel;
     private JTextField agRechaTextField;
     private JLabel tipoMensajeLabel;
-    private JTextField tipoMensajeTextField;
+    private JComboBox tipoMensajeComboBox;
     private JLabel powerBuilderLabel;
     private JTextField powerBuilderTextField;
     private JButton acceptButton;
