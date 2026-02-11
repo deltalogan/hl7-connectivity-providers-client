@@ -22,6 +22,7 @@ public class MainFrame extends JFrame {
 
     private final Hl7Controller hl7Controller;
 
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.90;
     private static final String IMAGE_PATH_ICON = "/icons/icon.png";
 
@@ -59,7 +60,13 @@ public class MainFrame extends JFrame {
         }
 
         pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
         setLocationRelativeTo(null);
     }
 

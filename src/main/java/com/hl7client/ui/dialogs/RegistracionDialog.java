@@ -28,6 +28,7 @@ import java.util.Objects;
 
 public class RegistracionDialog extends JDialog {
 
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.75;
     private static final String SPLASH_PATH = "/icons/splash.gif";
     private static final DateTimeFormatter HL7_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
@@ -55,7 +56,15 @@ public class RegistracionDialog extends JDialog {
         initDatePickers();
         initTipoMensajeControls();
 
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
         initActions();
         initShortcuts();
         installCloseBehavior();
@@ -397,9 +406,9 @@ public class RegistracionDialog extends JDialog {
         rechaExtTextField = new JTextField();
         viewEditBenefitsLabel = new JLabel();
         viewEditBenefitsButton = new JButton();
+        benefitsSummaryLabel = new JLabel();
         tipoEfectorLabel = new JLabel();
         tipoEfectorTextField = new JTextField();
-        benefitsSummaryLabel = new JLabel();
         idEfectorLabel = new JLabel();
         idEfectorTextField = new JTextField();
         tipoPrescrLabel = new JLabel();
@@ -429,9 +438,9 @@ public class RegistracionDialog extends JDialog {
         var contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0, 0};
-        ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).columnWeights = new double[] {0.0, 1.0, 0.0, 1.0, 1.0E-4};
-        ((GridBagLayout)contentPane.getLayout()).rowWeights = new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0E-4};
+        ((GridBagLayout)contentPane.getLayout()).rowWeights = new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0E-4};
 
         //---- modoLabel ----
         modoLabel.setText("modo:");
@@ -588,127 +597,127 @@ public class RegistracionDialog extends JDialog {
         contentPane.add(viewEditBenefitsButton, new GridBagConstraints(1, 7, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
+        contentPane.add(benefitsSummaryLabel, new GridBagConstraints(2, 7, 2, 1, 0.0, 0.0,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- tipoEfectorLabel ----
         tipoEfectorLabel.setText("tipoEfector:");
-        contentPane.add(tipoEfectorLabel, new GridBagConstraints(2, 7, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoEfectorLabel, new GridBagConstraints(0, 8, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(tipoEfectorTextField, new GridBagConstraints(3, 7, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
-        contentPane.add(benefitsSummaryLabel, new GridBagConstraints(1, 8, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoEfectorTextField, new GridBagConstraints(1, 8, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 5), 0, 0));
 
         //---- idEfectorLabel ----
         idEfectorLabel.setText("idEfector:");
-        contentPane.add(idEfectorLabel, new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0,
+        contentPane.add(idEfectorLabel, new GridBagConstraints(2, 8, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(idEfectorTextField, new GridBagConstraints(1, 9, 1, 1, 0.0, 0.0,
+        contentPane.add(idEfectorTextField, new GridBagConstraints(3, 8, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- tipoPrescrLabel ----
         tipoPrescrLabel.setText("tipoPrescr:");
-        contentPane.add(tipoPrescrLabel, new GridBagConstraints(2, 9, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoPrescrLabel, new GridBagConstraints(0, 9, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(tipoPrescrTextField, new GridBagConstraints(3, 9, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoPrescrTextField, new GridBagConstraints(1, 9, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- idPrescrLabel ----
         idPrescrLabel.setText("idPrescr:");
-        contentPane.add(idPrescrLabel, new GridBagConstraints(0, 10, 1, 1, 0.0, 0.0,
+        contentPane.add(idPrescrLabel, new GridBagConstraints(2, 9, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(idPrescrTextField, new GridBagConstraints(1, 10, 1, 1, 0.0, 0.0,
+        contentPane.add(idPrescrTextField, new GridBagConstraints(3, 9, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- msgIdLabel ----
         msgIdLabel.setText("msgId:");
-        contentPane.add(msgIdLabel, new GridBagConstraints(2, 10, 1, 1, 0.0, 0.0,
+        contentPane.add(msgIdLabel, new GridBagConstraints(0, 10, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(msgIdTextField, new GridBagConstraints(3, 10, 1, 1, 0.0, 0.0,
+        contentPane.add(msgIdTextField, new GridBagConstraints(1, 10, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- ackaceptLabel ----
         ackaceptLabel.setText("ackacept:");
-        contentPane.add(ackaceptLabel, new GridBagConstraints(0, 11, 1, 1, 0.0, 0.0,
+        contentPane.add(ackaceptLabel, new GridBagConstraints(2, 10, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(ackaceptTextField, new GridBagConstraints(1, 11, 1, 1, 0.0, 0.0,
+        contentPane.add(ackaceptTextField, new GridBagConstraints(3, 10, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- ackackaplLabel ----
         ackackaplLabel.setText("ackackapl:");
-        contentPane.add(ackackaplLabel, new GridBagConstraints(2, 11, 1, 1, 0.0, 0.0,
+        contentPane.add(ackackaplLabel, new GridBagConstraints(0, 11, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(ackackaplTextField, new GridBagConstraints(3, 11, 1, 1, 0.0, 0.0,
+        contentPane.add(ackackaplTextField, new GridBagConstraints(1, 11, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- consultaLabel ----
         consultaLabel.setText("consulta:");
-        contentPane.add(consultaLabel, new GridBagConstraints(0, 12, 1, 1, 0.0, 0.0,
+        contentPane.add(consultaLabel, new GridBagConstraints(2, 11, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(consultaTextField, new GridBagConstraints(1, 12, 1, 1, 0.0, 0.0,
+        contentPane.add(consultaTextField, new GridBagConstraints(3, 11, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- agRechaCabeLabel ----
         agRechaCabeLabel.setText("agRechaCabe:");
-        contentPane.add(agRechaCabeLabel, new GridBagConstraints(2, 12, 1, 1, 0.0, 0.0,
+        contentPane.add(agRechaCabeLabel, new GridBagConstraints(0, 12, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(agRechaCabeTextField, new GridBagConstraints(3, 12, 1, 1, 0.0, 0.0,
+        contentPane.add(agRechaCabeTextField, new GridBagConstraints(1, 12, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 0), 0, 0));
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- agRechaLabel ----
         agRechaLabel.setText("agRecha:");
-        contentPane.add(agRechaLabel, new GridBagConstraints(0, 13, 1, 1, 0.0, 0.0,
+        contentPane.add(agRechaLabel, new GridBagConstraints(2, 12, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(agRechaTextField, new GridBagConstraints(1, 13, 1, 1, 0.0, 0.0,
+        contentPane.add(agRechaTextField, new GridBagConstraints(3, 12, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- tipoMensajeLabel ----
         tipoMensajeLabel.setText("tipoMensaje:");
-        contentPane.add(tipoMensajeLabel, new GridBagConstraints(2, 13, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoMensajeLabel, new GridBagConstraints(0, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(tipoMensajeComboBox, new GridBagConstraints(3, 13, 1, 1, 0.0, 0.0,
+        contentPane.add(tipoMensajeComboBox, new GridBagConstraints(1, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
-            new Insets(0, 0, 5, 0), 0, 0));
+            new Insets(0, 0, 5, 5), 0, 0));
 
         //---- powerBuilderLabel ----
         powerBuilderLabel.setText("powerBuilder:");
-        contentPane.add(powerBuilderLabel, new GridBagConstraints(0, 14, 1, 1, 0.0, 0.0,
+        contentPane.add(powerBuilderLabel, new GridBagConstraints(2, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(powerBuilderTextField, new GridBagConstraints(1, 14, 1, 1, 0.0, 0.0,
+        contentPane.add(powerBuilderTextField, new GridBagConstraints(3, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- acceptButton ----
         acceptButton.setText("Accept");
-        contentPane.add(acceptButton, new GridBagConstraints(0, 15, 1, 1, 0.0, 0.0,
+        contentPane.add(acceptButton, new GridBagConstraints(0, 14, 1, 1, 0.0, 0.0,
             GridBagConstraints.SOUTHWEST, GridBagConstraints.NONE,
             new Insets(0, 0, 0, 5), 0, 0));
 
         //---- cancelButton ----
         cancelButton.setText("Cancel");
-        contentPane.add(cancelButton, new GridBagConstraints(3, 15, 1, 1, 0.0, 0.0,
+        contentPane.add(cancelButton, new GridBagConstraints(3, 14, 1, 1, 0.0, 0.0,
             GridBagConstraints.SOUTHEAST, GridBagConstraints.NONE,
             new Insets(0, 0, 0, 0), 0, 0));
         pack();
@@ -748,9 +757,9 @@ public class RegistracionDialog extends JDialog {
     private JTextField rechaExtTextField;
     private JLabel viewEditBenefitsLabel;
     private JButton viewEditBenefitsButton;
+    private JLabel benefitsSummaryLabel;
     private JLabel tipoEfectorLabel;
     private JTextField tipoEfectorTextField;
-    private JLabel benefitsSummaryLabel;
     private JLabel idEfectorLabel;
     private JTextField idEfectorTextField;
     private JLabel tipoPrescrLabel;

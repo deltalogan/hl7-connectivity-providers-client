@@ -4,8 +4,8 @@ new FormModel {
 	contentType: "form/swing"
 	root: new FormRoot {
 		add( new FormWindow( "javax.swing.JDialog", new FormLayoutManager( class java.awt.GridBagLayout ) {
-			"$columnSpecs": "0, 0:1.0, 0:1.0"
-			"$rowSpecs": "0, 0, 0:1.0, 0, 0"
+			"$columnSpecs": "0:1.0, 0:1.0"
+			"$rowSpecs": "0, 0, 0, 0:1.0, 0, 0"
 			"$hGap": 5
 			"$vGap": 5
 			"$alignLeft": true
@@ -14,24 +14,27 @@ new FormModel {
 			name: "this"
 			add( new FormComponent( "javax.swing.JLabel" ) {
 				name: "lengthPreviewLabel"
-			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) )
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridwidth": 2
+			} )
 			add( new FormComponent( "javax.swing.JLabel" ) {
 				name: "benefitLabel"
 				"text": "Benefit:"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridy": 1
 				"hAlign": 4
-				"gridx": 1
 			} )
 			add( new FormComponent( "javax.swing.JTextField" ) {
 				name: "benefitTextField"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridx": 2
+				"gridx": 1
+				"gridy": 1
 			} )
 			add( new FormComponent( "javax.swing.JLabel" ) {
 				name: "formatHintLabel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridx": 2
-				"gridy": 1
+				"gridy": 2
+				"gridwidth": 2
 			} )
 			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
 				name: "toothSelectionScrollPane"
@@ -39,8 +42,8 @@ new FormModel {
 					name: "toothSelectionTable"
 				} )
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridy": 2
-				"gridwidth": 3
+				"gridy": 3
+				"gridwidth": 2
 			} )
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.GridBagLayout ) {
 				"$columnSpecs": "0, 0, 0, 0, 0, 0, 0"
@@ -51,7 +54,7 @@ new FormModel {
 				"$alignTop": true
 			} ) {
 				name: "toothSurfacePanel"
-				"border": new javax.swing.border.TitledBorder( "Tooth surfaces" )
+				"border": new javax.swing.border.TitledBorder( "Tooth Surface" )
 				add( new FormComponent( "javax.swing.JCheckBox" ) {
 					name: "mesialCheckBox"
 					"text": "Mesial"
@@ -93,24 +96,22 @@ new FormModel {
 					"gridx": 6
 				} )
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridy": 3
-				"gridwidth": 3
+				"gridy": 4
+				"gridwidth": 2
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "acceptButton"
 				"text": "Accept"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridy": 4
-				"vAlign": 3
+				"gridy": 5
 				"hAlign": 2
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "cancelButton"
 				"text": "Cancel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridx": 2
-				"gridy": 4
-				"vAlign": 3
+				"gridx": 1
+				"gridy": 5
 				"hAlign": 4
 			} )
 		}, new FormLayoutConstraints( null ) {

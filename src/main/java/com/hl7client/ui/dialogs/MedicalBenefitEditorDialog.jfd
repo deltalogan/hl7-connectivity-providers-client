@@ -32,6 +32,7 @@ new FormModel {
 				name: "charsPreviewLabel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 1
+				"gridwidth": 3
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "acceptButton"

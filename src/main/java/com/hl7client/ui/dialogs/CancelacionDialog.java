@@ -24,6 +24,7 @@ public class CancelacionDialog extends JDialog {
 
     private final Hl7Controller hl7Controller;
 
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.75;
     private static final String SPLASH_PATH = "/icons/splash.gif";
 
@@ -50,7 +51,15 @@ public class CancelacionDialog extends JDialog {
         initShortcuts();
         installCloseBehavior();
 
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
 
         // Valores FIJOS obligatorios - se asignan después de initComponents()
         modoTextField.setText("N");

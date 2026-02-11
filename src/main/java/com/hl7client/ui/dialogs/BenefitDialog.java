@@ -7,6 +7,7 @@ import com.hl7client.model.dental.DentalBenefit;
 import com.hl7client.model.dental.DentalSurface;
 import com.hl7client.model.enums.TipoMensaje;
 import com.hl7client.ui.model.BenefitTableModel;
+import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
  * Permite insertar, editar, eliminar y visualizar la lista de beneficios.
  */
 public class BenefitDialog extends JDialog {
+
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
+    private static final double SCREEN_RATIO = 0.50;
 
     private final TipoMensaje tipoMensaje;
     private final List<BenefitItem> initialBenefits;
@@ -33,6 +37,16 @@ public class BenefitDialog extends JDialog {
         this.initialBenefits = List.copyOf(initialBenefits);
         initComponents();
         initLogic();
+
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
     }
 
     private void initLogic() {

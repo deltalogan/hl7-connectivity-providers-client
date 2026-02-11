@@ -3,6 +3,7 @@ package com.hl7client.ui.dialogs;
 import javax.swing.border.*;
 import com.hl7client.model.Hl7Constants;
 import com.hl7client.model.dental.*;
+import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
  */
 public class DentalBenefitEditorDialog extends JDialog {
 
+    private static final double MINIMUM_SCREEN_RATIO = 0.30;
+    private static final double SCREEN_RATIO = 0.40;
+
     private static final String TOTAL_COUNT = "1";
     private static final String ORIGIN = "P";
     private static final String ITEM_QUANTITY = "1";
@@ -41,6 +45,16 @@ public class DentalBenefitEditorDialog extends JDialog {
         this.onAcceptCallback = onAccept;
         initComponents();
         postInit();
+
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
     }
 
     /**
@@ -435,23 +449,23 @@ public class DentalBenefitEditorDialog extends JDialog {
         //======== this ========
         var contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
-        ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0};
-        ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0};
-        ((GridBagLayout)contentPane.getLayout()).columnWeights = new double[] {0.0, 1.0, 1.0, 1.0E-4};
-        ((GridBagLayout)contentPane.getLayout()).rowWeights = new double[] {0.0, 0.0, 1.0, 0.0, 0.0, 1.0E-4};
-        contentPane.add(lengthPreviewLabel, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0,
+        ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0};
+        ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0};
+        ((GridBagLayout)contentPane.getLayout()).columnWeights = new double[] {1.0, 1.0, 1.0E-4};
+        ((GridBagLayout)contentPane.getLayout()).rowWeights = new double[] {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0E-4};
+        contentPane.add(lengthPreviewLabel, new GridBagConstraints(0, 0, 2, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- benefitLabel ----
         benefitLabel.setText("Benefit:");
-        contentPane.add(benefitLabel, new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+        contentPane.add(benefitLabel, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(benefitTextField, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0,
+        contentPane.add(benefitTextField, new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
-        contentPane.add(formatHintLabel, new GridBagConstraints(2, 1, 1, 1, 0.0, 0.0,
+        contentPane.add(formatHintLabel, new GridBagConstraints(0, 2, 2, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
@@ -459,13 +473,13 @@ public class DentalBenefitEditorDialog extends JDialog {
         {
             toothSelectionScrollPane.setViewportView(toothSelectionTable);
         }
-        contentPane.add(toothSelectionScrollPane, new GridBagConstraints(0, 2, 3, 1, 0.0, 0.0,
+        contentPane.add(toothSelectionScrollPane, new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
         //======== toothSurfacePanel ========
         {
-            toothSurfacePanel.setBorder(new TitledBorder("Tooth surfaces"));
+            toothSurfacePanel.setBorder(new TitledBorder("Tooth Surface"));
             toothSurfacePanel.setLayout(new GridBagLayout());
             ((GridBagLayout)toothSurfacePanel.getLayout()).columnWidths = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
             ((GridBagLayout)toothSurfacePanel.getLayout()).rowHeights = new int[] {0, 0};
@@ -514,20 +528,20 @@ public class DentalBenefitEditorDialog extends JDialog {
                 GridBagConstraints.CENTER, GridBagConstraints.BOTH,
                 new Insets(0, 0, 0, 0), 0, 0));
         }
-        contentPane.add(toothSurfacePanel, new GridBagConstraints(0, 3, 3, 1, 0.0, 0.0,
+        contentPane.add(toothSurfacePanel, new GridBagConstraints(0, 4, 2, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
         //---- acceptButton ----
         acceptButton.setText("Accept");
-        contentPane.add(acceptButton, new GridBagConstraints(0, 4, 1, 1, 0.0, 0.0,
-            GridBagConstraints.SOUTHWEST, GridBagConstraints.NONE,
+        contentPane.add(acceptButton, new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0,
+            GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 0, 5), 0, 0));
 
         //---- cancelButton ----
         cancelButton.setText("Cancel");
-        contentPane.add(cancelButton, new GridBagConstraints(2, 4, 1, 1, 0.0, 0.0,
-            GridBagConstraints.SOUTHEAST, GridBagConstraints.NONE,
+        contentPane.add(cancelButton, new GridBagConstraints(1, 5, 1, 1, 0.0, 0.0,
+            GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 0, 0), 0, 0));
         pack();
         setLocationRelativeTo(getOwner());

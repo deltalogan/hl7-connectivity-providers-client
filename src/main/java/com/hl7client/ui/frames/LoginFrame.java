@@ -26,9 +26,8 @@ public class LoginFrame extends JFrame {
     private LoginController controller;
     private CloseAction closeAction;
 
-    // Tamaños
-    private static final Dimension MIN_SIZE = new Dimension(326, 289);
-    private static final double LOGIN_SCREEN_RATIO = 0.30;
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
+    private static final double SCREEN_RATIO = 0.50;
 
     private static final String IMAGE_PATH_LOGO = "/icons/logo.png";
     private static final String IMAGE_PATH_ICON = "/icons/icon.png";
@@ -149,21 +148,24 @@ public class LoginFrame extends JFrame {
 
     private void configureFrame() {
         setTitle(AppInfo.loginTitle());
-
         Image icon = loadImageResource(IMAGE_PATH_ICON);
         if (icon != null) {
             setIconImage(icon);
         }
 
         pack();
-        setMinimumSize(MIN_SIZE);
-        WindowSizer.applyRelativeScreenSize(this, LOGIN_SCREEN_RATIO);
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
         setLocationRelativeTo(null);
 
         ScalableImageLabel scalable = new ScalableImageLabel();
         scalable.setHorizontalAlignment(SwingConstants.CENTER);
         scalable.setImage(getClass().getResource(IMAGE_PATH_LOGO));
-
         loginLabel.setLayout(new BorderLayout());
         loginLabel.add(scalable, BorderLayout.CENTER);
 

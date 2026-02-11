@@ -23,6 +23,7 @@ public class ElegibilidadDialog extends JDialog {
 
     private final Hl7Controller hl7Controller;
 
+    private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.75;
     private static final String SPLASH_PATH = "/icons/splash.gif";
 
@@ -50,7 +51,15 @@ public class ElegibilidadDialog extends JDialog {
         initShortcuts();
         installCloseBehavior();
 
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
 
         // Valores FIJOS obligatorios - se asignan después de initComponents()
         modoTextField.setText("N");
@@ -289,6 +298,13 @@ public class ElegibilidadDialog extends JDialog {
 
         //======== altaPanel ========
         {
+            altaPanel.setBorder (new javax. swing. border. CompoundBorder( new javax .swing .border .TitledBorder (new javax.
+            swing. border. EmptyBorder( 0, 0, 0, 0) , "JF\u006frmD\u0065sig\u006eer \u0045val\u0075ati\u006fn", javax. swing. border
+            . TitledBorder. CENTER, javax. swing. border. TitledBorder. BOTTOM, new java .awt .Font ("Dia\u006cog"
+            ,java .awt .Font .BOLD ,12 ), java. awt. Color. red) ,altaPanel. getBorder
+            ( )) ); altaPanel. addPropertyChangeListener (new java. beans. PropertyChangeListener( ){ @Override public void propertyChange (java
+            .beans .PropertyChangeEvent e) {if ("\u0062ord\u0065r" .equals (e .getPropertyName () )) throw new RuntimeException
+            ( ); }} );
             altaPanel.setLayout(new GridBagLayout());
             ((GridBagLayout)altaPanel.getLayout()).columnWidths = new int[] {0};
             ((GridBagLayout)altaPanel.getLayout()).rowHeights = new int[] {0};

@@ -2,6 +2,7 @@ package com.hl7client.ui.dialogs;
 
 import com.hl7client.model.benefit.BenefitItem;
 import com.hl7client.model.benefit.MedicalBenefitItem;
+import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -16,6 +17,9 @@ import java.util.function.Consumer;
  * Permite ingresar cantidad y código de prestación, con control de longitud restante.
  */
 public class MedicalBenefitEditorDialog extends JDialog {
+
+    private static final double MINIMUM_SCREEN_RATIO = 0.30;
+    private static final double SCREEN_RATIO = 0.40;
 
     private static final int MAX_QTY_PER_TYPE = 99;
     private static final String CODE_REGEX = "\\d{6}"; // exactamente 6 dígitos
@@ -37,6 +41,16 @@ public class MedicalBenefitEditorDialog extends JDialog {
 
         initComponents();
         initLogic();
+
+        pack();
+
+        // Establecemos tamaño mínimo proporcional a la pantalla
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+
+        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
+
+        setLocationRelativeTo(null);
     }
 
     private void initLogic() {
@@ -215,9 +229,9 @@ public class MedicalBenefitEditorDialog extends JDialog {
         contentPane.add(benefitTextField, new GridBagConstraints(2, 0, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
-        contentPane.add(charsPreviewLabel, new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0,
+        contentPane.add(charsPreviewLabel, new GridBagConstraints(0, 1, 3, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
-            new Insets(0, 0, 5, 5), 0, 0));
+            new Insets(0, 0, 5, 0), 0, 0));
 
         //---- acceptButton ----
         acceptButton.setText("Accept");

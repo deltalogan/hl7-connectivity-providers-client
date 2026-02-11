@@ -26,7 +26,7 @@ public class SplashDialog extends JDialog {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - pea.ch.vi.ta.l@gmail.com
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         gifLabel = new JLabel();
 
         //======== this ========
@@ -45,7 +45,7 @@ public class SplashDialog extends JDialog {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - pea.ch.vi.ta.l@gmail.com
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JLabel gifLabel;
     // JFormDesigner - End of variables declaration  //GEN-END:variables  @formatter:on
 }
