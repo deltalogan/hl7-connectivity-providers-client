@@ -102,7 +102,7 @@ public final class DentalBenefit implements BenefitItem {
 
         // Construcción explícita para garantizar separadores correctos
         StringBuilder sb = new StringBuilder();
-        sb.append("1^");                        // total + separador cantidad-código
+        sb.append("1^*");                        // total + separador cantidad-código
         sb.append(pieceStr);                    // pieza (vacío si null)
         sb.append("*");                         // separador pieza → superficies
         sb.append(surfacesCode);                // superficies (vacío si ninguna)

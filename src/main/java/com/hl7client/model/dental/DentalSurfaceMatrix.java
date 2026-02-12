@@ -6,46 +6,54 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Matriz de superficies dentales permitidas por tipo de pieza.
- * Basada en estándares odontológicos (FDI/ISO 3950) y observaciones de datos reales de producción.
+ * Define las reglas de validación para combinaciones válidas de superficies dentales
+ * según el tipo de pieza (basado en estándares FDI/ISO 3950 y observaciones clínicas).
  * <p>
- * Reglas principales:
- * - Dientes anteriores (incisivos y caninos): M, D, V, L, I, P
- * - Dientes posteriores (premolares y molares): M, D, V, L, O, P
- * - Máximo 3 superficies por prestación
- * - No se permite combinar Oclusal (O) e Incisal (I)
+ * Reglas implementadas:
+ * <ul>
+ *   <li>Dientes anteriores (incisivos, caninos): M, D, V, L, I, P</li>
+ *   <li>Dientes posteriores (premolares, molares): M, D, V, L, O, P</li>
+ *   <li>Máximo 3 superficies por prestación</li>
+ *   <li>No se permite combinar Oclusal (O) e Incisal (I)</li>
+ *   <li>Sin pieza → no se permiten superficies</li>
+ * </ul>
  */
 public final class DentalSurfaceMatrix {
 
-    // Superficies permitidas para dientes anteriores (incisivos y caninos)
-    private static final Set<DentalSurface> ANTERIORES =
-            EnumSet.of(
-                    DentalSurface.MESIAL,      // M
-                    DentalSurface.DISTAL,      // D
-                    DentalSurface.VESTIBULAR,  // V
-                    DentalSurface.LINGUAL,     // L
-                    DentalSurface.INCISAL,     // I
-                    DentalSurface.PALATAL      // P
-            );
+    // Conjuntos de superficies permitidas por grupo de dientes
+    private static final Set<DentalSurface> ANTERIORES = EnumSet.of(
+            DentalSurface.MESIAL,
+            DentalSurface.DISTAL,
+            DentalSurface.VESTIBULAR,
+            DentalSurface.LINGUAL,
+            DentalSurface.INCISAL,
+            DentalSurface.PALATAL
+    );
 
-    // Superficies permitidas para dientes posteriores (premolares y molares)
-    private static final Set<DentalSurface> POSTERIORES =
-            EnumSet.of(
-                    DentalSurface.MESIAL,      // M
-                    DentalSurface.DISTAL,      // D
-                    DentalSurface.VESTIBULAR,  // V
-                    DentalSurface.LINGUAL,     // L
-                    DentalSurface.OCCLUSAL,    // O
-                    DentalSurface.PALATAL      // P
-            );
+    private static final Set<DentalSurface> POSTERIORES = EnumSet.of(
+            DentalSurface.MESIAL,
+            DentalSurface.DISTAL,
+            DentalSurface.VESTIBULAR,
+            DentalSurface.LINGUAL,
+            DentalSurface.OCCLUSAL,
+            DentalSurface.PALATAL
+    );
+
+    // Reglas globales
+    private static final int MAX_SURFACES_ALLOWED = 3;
+    private static final Set<DentalSurface> MUTUALLY_EXCLUSIVE = EnumSet.of(
+            DentalSurface.OCCLUSAL,
+            DentalSurface.INCISAL
+    );
+
 
     /**
-     * Retorna el conjunto de superficies permitidas para una pieza dental específica.
+     * Retorna el conjunto de superficies permitidas para una pieza dada.
      *
-     * @param piece la pieza dental (puede ser null)
+     * @param piece pieza dental (puede ser null)
      * @return conjunto inmutable de superficies permitidas (vacío si piece == null)
      */
-    public static Set<DentalSurface> allowedFor(DentalPiece piece) {
+    public static Set<DentalSurface> getAllowedSurfacesFor(DentalPiece piece) {
         if (piece == null) {
             return EnumSet.noneOf(DentalSurface.class);
         }
@@ -56,60 +64,75 @@ public final class DentalSurfaceMatrix {
     }
 
     /**
-     * Valida si una combinación de superficies es válida para una pieza dada.
-     * Aplica todas las reglas observadas en producción y estándares odontológicos.
+     * Valida si la combinación de pieza + superficies es odontológicamente válida.
      * <p>
-     * Devuelve un {@link DentalValidationResult} que puede contener múltiples errores.
+     * Reglas aplicadas (estrictas):
+     * <ul>
+     *   <li>Sin pieza → superficies deben estar vacías</li>
+     *   <li>Con pieza → todas las superficies deben estar permitidas para ese tipo</li>
+     *   <li>Máximo {@value #MAX_SURFACES_ALLOWED} superficies</li>
+     *   <li>No combinar Oclusal e Incisal</li>
+     * </ul>
      *
-     * @param piece            la pieza dental seleccionada (puede ser null)
-     * @param selectedSurfaces las superficies seleccionadas (puede ser null o vacío)
-     * @return resultado de la validación con posible acumulación de mensajes de error
+     * @param piece             pieza seleccionada (puede ser null)
+     * @param selectedSurfaces  conjunto de superficies marcadas (no null)
+     * @return resultado de validación (puede contener múltiples mensajes de error)
      */
-    public static DentalValidationResult validateCombination(
+    public static DentalValidationResult validate(
             DentalPiece piece,
             Set<DentalSurface> selectedSurfaces
     ) {
-        List<String> errors = new ArrayList<>();
-
-        // Caso 1: sin pieza
-        if (piece == null) {
-            if (!selectedSurfaces.isEmpty()) {
-                errors.add("No se pueden seleccionar superficies si no hay pieza dental seleccionada");
-            }
-            // Permitimos explícitamente pieza null + superficies vacías
-            return errors.isEmpty() ? DentalValidationResult.ok() : DentalValidationResult.errors(errors);
+        if (selectedSurfaces == null) {
+            selectedSurfaces = EnumSet.noneOf(DentalSurface.class);
         }
 
-        // Caso 2: con pieza → ya NO exigimos al menos una superficie
-        // (aceptamos 0 o más)
-        Set<DentalSurface> allowed = allowedFor(piece);
+        List<String> errors = new ArrayList<>();
 
+        // Regla 1: sin pieza → prohibido tener superficies
+        if (piece == null) {
+            if (!selectedSurfaces.isEmpty()) {
+                errors.add("No se pueden seleccionar superficies sin elegir una pieza dental.");
+            }
+            return buildResult(errors);
+        }
+
+        // Regla 2: superficies permitidas según tipo de diente
+        Set<DentalSurface> allowed = getAllowedSurfacesFor(piece);
         for (DentalSurface surface : selectedSurfaces) {
             if (!allowed.contains(surface)) {
                 errors.add(String.format(
-                        "La superficie %s (%s) no está permitida para la pieza %s",
-                        surface.name(), surface.getCode(), piece.getFdiCode()
+                        "La superficie %s (%s) no está permitida en la pieza %s (%s)",
+                        surface.name(), surface.getCode(),
+                        piece.getFdiCode(), piece.getType().name().toLowerCase()
                 ));
             }
         }
 
-        // Regla: máximo 3 superficies (mantener si el negocio lo exige)
-        if (selectedSurfaces.size() > 3) {
-            errors.add("Máximo permitido: 3 superficies por prestación (actual: " + selectedSurfaces.size() + ")");
+        // Regla 3: límite máximo de superficies
+        if (selectedSurfaces.size() > MAX_SURFACES_ALLOWED) {
+            errors.add(String.format(
+                    "Máximo permitido: %d superficies por prestación (seleccionadas: %d)",
+                    MAX_SURFACES_ALLOWED, selectedSurfaces.size()
+            ));
         }
 
-        // Regla: incompatibilidad Oclusal + Incisal (mantener)
-        if (selectedSurfaces.contains(DentalSurface.OCCLUSAL) &&
-                selectedSurfaces.contains(DentalSurface.INCISAL)) {
-            errors.add("No se puede combinar Oclusal (O) e Incisal (I) en la misma prestación");
+        // Regla 4: incompatibilidades explícitas
+        if (selectedSurfaces.containsAll(MUTUALLY_EXCLUSIVE)) {
+            errors.add("No se puede combinar Oclusal (O) e Incisal (I) en la misma prestación.");
         }
 
+        // → Aquí se pueden agregar más reglas específicas en el futuro
+
+        return buildResult(errors);
+    }
+
+    private static DentalValidationResult buildResult(List<String> errors) {
         return errors.isEmpty()
                 ? DentalValidationResult.ok()
                 : DentalValidationResult.errors(errors);
     }
 
     private DentalSurfaceMatrix() {
-        // Evitar instanciación
+        // Clase utilitaria → no instanciable
     }
 }

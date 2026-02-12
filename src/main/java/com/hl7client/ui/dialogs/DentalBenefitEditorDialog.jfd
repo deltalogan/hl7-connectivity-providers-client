@@ -30,11 +30,17 @@ new FormModel {
 				"gridx": 1
 				"gridy": 1
 			} )
+			add( new FormComponent( "javax.swing.JComboBox" ) {
+				name: "denticionComboBox"
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridy": 2
+				"hAlign": 2
+			} )
 			add( new FormComponent( "javax.swing.JLabel" ) {
 				name: "formatHintLabel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 2
-				"gridwidth": 2
+				"gridx": 1
 			} )
 			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
 				name: "toothSelectionScrollPane"

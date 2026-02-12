@@ -1,17 +1,19 @@
 package com.hl7client.ui.dialogs;
 
-import javax.swing.border.*;
 import com.hl7client.model.Hl7Constants;
 import com.hl7client.model.dental.*;
+
 import com.hl7client.ui.util.DialogUtils;
 import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.*;
@@ -20,17 +22,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Editor de prestaciones odontológicas.
- * Permite crear o editar una prestación con:
- * - Selección opcional de pieza dental (FDI)
- * - Selección opcional de superficies (0 o más)
- * - Código de prestación obligatorio (numérico, prefijo "O" automático)
- * - Construcción y validación del string HL7 (permite sin pieza ni superficies)
+ * Editor para agregar o modificar una prestación odontológica.
+ * Soporta dentición permanente (adultos) y temporal (niños),
+ * selección opcional de pieza y superficies, y validación estricta.
  */
 public class DentalBenefitEditorDialog extends JDialog {
 
-    private static final double MINIMUM_SCREEN_RATIO = 0.30;
-    private static final double SCREEN_RATIO = 0.40;
+    private static final double MINIMUM_SCREEN_RATIO = 0.35;
+    private static final double SCREEN_RATIO = 0.45;
 
     private static final String TOTAL_COUNT = "1";
     private static final String ORIGIN = "P";
@@ -38,7 +37,7 @@ public class DentalBenefitEditorDialog extends JDialog {
     private static final String ASTERISKS = "**";
 
     private final Consumer<DentalBenefit> onAcceptCallback;
-    private DentalBenefit initialBenefit; // Para saber si es edición o inserción
+    private DentalBenefit initialBenefit;
     private DentalBenefit result;
 
     public DentalBenefitEditorDialog(Window owner, Consumer<DentalBenefit> onAccept) {
@@ -46,27 +45,18 @@ public class DentalBenefitEditorDialog extends JDialog {
         this.onAcceptCallback = onAccept;
         initComponents();
         postInit();
-
         pack();
-
-        // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
-
-        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
-
         setLocationRelativeTo(null);
         installCloseBehavior();
     }
 
-    /**
-     * Precarga valores de una prestación existente (modo edición)
-     */
     public void setInitialBenefit(DentalBenefit benefit) {
         this.initialBenefit = benefit;
         if (benefit == null) return;
 
-        // Código sin prefijo "O"
+        // Código (sin prefijo O)
         String code = benefit.getBenefitCode();
         if (code != null && code.startsWith("O") && code.length() > 1) {
             benefitTextField.setText(code.substring(1));
@@ -74,21 +64,21 @@ public class DentalBenefitEditorDialog extends JDialog {
             benefitTextField.setText(code);
         }
 
-        // Pieza (opcional)
-        if (benefit.getPiece() != null) {
-            int fdi = Integer.parseInt(benefit.getPiece().getFdiCode());
-            for (int row = 0; row < toothSelectionTable.getRowCount(); row++) {
-                Integer rowFdi = (Integer) toothSelectionTable.getValueAt(row, 0);
-                if (rowFdi != null && rowFdi == fdi) {
-                    toothSelectionTable.setValueAt(true, row, 2);
-                    Rectangle rect = toothSelectionTable.getCellRect(row, 0, true);
-                    toothSelectionTable.scrollRectToVisible(rect);
-                    break;
-                }
+        // Determinar dentición y seleccionar pieza
+        DentalPiece piece = benefit.getPiece();
+        if (piece != null) {
+            int fdi = Integer.parseInt(piece.getFdiCode());
+            DentalToothData.ToothEntry entry = DentalToothData.findByFdi(fdi);
+            if (entry != null) {
+                boolean isChild = entry.type == DentalPieceType.MOLAR && fdi >= 51 && fdi <= 85;
+                denticionComboBox.setSelectedIndex(isChild ? 1 : 0);
+                // Forzar actualización de tabla antes de seleccionar
+                updateToothTableModel();
+                selectPieceInTable(fdi);
             }
         }
 
-        // Superficies (opcional)
+        // Superficies
         Set<DentalSurface> surfaces = benefit.getSurfaces();
         mesialCheckBox.setSelected(surfaces.contains(DentalSurface.MESIAL));
         distalCheckBox.setSelected(surfaces.contains(DentalSurface.DISTAL));
@@ -102,29 +92,41 @@ public class DentalBenefitEditorDialog extends JDialog {
     }
 
     private void postInit() {
-        updateTitle(); // Inicial
+        // Inicializar combo de dentición
+        denticionComboBox.setModel(new DefaultComboBoxModel<>(new String[]{
+                "Dentición Adulta (permanentes)",
+                "Dentición Temporal (niños)"
+        }));
+        denticionComboBox.setSelectedIndex(0);
+        denticionComboBox.addActionListener(e -> {
+            updateToothTableModel();
+            clearToothSelection();
+            updatePreview();
+        });
 
-        toothSelectionTable.setModel(createToothTableModel());
+        // Tabla de piezas
+        toothSelectionTable.setModel(createToothTableModel(false));
         toothSelectionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Renderer bonito para checkbox
+        // Renderer para checkbox
         toothSelectionTable.setDefaultRenderer(Boolean.class, new DefaultTableCellRenderer() {
-            private final JCheckBox checkBox = new JCheckBox();
-
+            private final JCheckBox renderer = new JCheckBox();
+            {
+                renderer.setHorizontalAlignment(SwingConstants.CENTER);
+            }
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus,
                                                            int row, int column) {
-                checkBox.setSelected(value != null && (Boolean) value);
-                checkBox.setHorizontalAlignment(SwingConstants.CENTER);
-                checkBox.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-                return checkBox;
+                renderer.setSelected(value != null && (Boolean) value);
+                renderer.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+                return renderer;
             }
         });
 
         toothSelectionTable.setDefaultEditor(Object.class, null);
 
-        // Selección única de pieza (opcional)
+        // Selección exclusiva de pieza
         toothSelectionTable.getModel().addTableModelListener(e -> {
             if (e.getType() == TableModelEvent.UPDATE && e.getColumn() == 2) {
                 int editedRow = e.getFirstRow();
@@ -140,102 +142,145 @@ public class DentalBenefitEditorDialog extends JDialog {
             }
         });
 
-        ActionListener updateListener = e -> updatePreview();
-        mesialCheckBox.addActionListener(updateListener);
-        distalCheckBox.addActionListener(updateListener);
-        vestibularCheckBox.addActionListener(updateListener);
-        lingualCheckBox.addActionListener(updateListener);
-        occlusalCheckBox.addActionListener(updateListener);
-        incisalCheckBox.addActionListener(updateListener);
-        palatalCheckBox.addActionListener(updateListener);
+        // Listeners de superficies y código
+        ActionListener surfaceListener = e -> updatePreview();
+        mesialCheckBox.addActionListener(surfaceListener);
+        distalCheckBox.addActionListener(surfaceListener);
+        vestibularCheckBox.addActionListener(surfaceListener);
+        lingualCheckBox.addActionListener(surfaceListener);
+        occlusalCheckBox.addActionListener(surfaceListener);
+        incisalCheckBox.addActionListener(surfaceListener);
+        palatalCheckBox.addActionListener(surfaceListener);
 
         benefitTextField.getDocument().addDocumentListener(new SimpleDocumentListener(this::updatePreview));
 
         acceptButton.addActionListener(e -> onAccept());
-        cancelButton.addActionListener(e -> dispose());
-
         updatePreview();
+    }
+
+    private void updateToothTableModel() {
+        boolean isChild = denticionComboBox.getSelectedIndex() == 1;
+        toothSelectionTable.setModel(createToothTableModel(isChild));
+    }
+
+    private DefaultTableModel createToothTableModel(boolean child) {
+        DefaultTableModel model = new DefaultTableModel(
+                new Object[]{"FDI", "Descripción", "Seleccionar"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2;
+            }
+
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 2 ? Boolean.class : String.class;
+            }
+        };
+
+        List<DentalToothData.ToothEntry> teeth = DentalToothData.getTeeth(child);
+        for (DentalToothData.ToothEntry entry : teeth) {
+            model.addRow(new Object[]{entry.fdi, entry.description, false});
+        }
+
+        return model;
+    }
+
+    private void clearToothSelection() {
+        for (int row = 0; row < toothSelectionTable.getRowCount(); row++) {
+            toothSelectionTable.setValueAt(false, row, 2);
+        }
+    }
+
+    private void selectPieceInTable(int fdi) {
+        for (int row = 0; row < toothSelectionTable.getRowCount(); row++) {
+            Integer rowFdi = (Integer) toothSelectionTable.getValueAt(row, 0);
+            if (rowFdi != null && rowFdi == fdi) {
+                toothSelectionTable.setValueAt(true, row, 2);
+                Rectangle rect = toothSelectionTable.getCellRect(row, 0, true);
+                toothSelectionTable.scrollRectToVisible(rect);
+                break;
+            }
+        }
     }
 
     private void updateTitle() {
         String modo = (initialBenefit != null) ? "Editar" : "Nueva";
-        String piezaInfo = getSelectedPiece() != null ? " - Pieza " + getSelectedPiece().getFdiCode() : "";
+        DentalPiece piece = getSelectedPiece();
+        String piezaInfo = piece != null ? " – Pieza " + piece.getFdiCode() : "";
         setTitle(modo + " Prestación Odontológica" + piezaInfo);
     }
 
     private void updatePreview() {
         updateTitle();
 
-        DentalPiece selectedPiece = getSelectedPiece();
-        Set<DentalSurface> selectedSurfaces = getSelectedSurfaces();
-        String benefitCode = getBenefitCode();
+        DentalPiece piece = getSelectedPiece();
+        Set<DentalSurface> surfaces = getSelectedSurfaces();
+        String code = getBenefitCode();
         String hl7 = buildHl7String();
         int len = hl7.length();
 
         StringBuilder msg = new StringBuilder();
-        Color color; // verde por defecto (válido)
+        Color color = new Color(0, 140, 0); // verde por defecto
 
-        if (benefitCode.isEmpty()) {
-            msg.append("<b>Ingrese el código de prestación</b><br>(solo números, ej: 020801)");
-            color = new Color(200, 100, 0); // ámbar
-        } else if (selectedPiece == null) {
-            if (selectedSurfaces.isEmpty()) {
-                msg.append("<b>Prestación general</b><br>Sin pieza ni caras específicas – <b>Válida</b>");
-                color = new Color(0, 140, 0);
+        if (code.isEmpty()) {
+            msg.append("<b>Ingrese código de prestación</b> (ej: 020801)");
+            color = new Color(200, 100, 0);
+        } else if (piece == null) {
+            if (surfaces.isEmpty()) {
+                msg.append("<b>Prestación general</b> – Sin pieza ni caras – <b>Válida</b>");
             } else {
-                msg.append("<b>¡Atención!</b><br>Superficies seleccionadas sin pieza<br>Las caras serán ignoradas en HL7");
+                msg.append("<b>¡Atención!</b><br>Superficies ignoradas en HL7 (sin pieza seleccionada)");
                 color = new Color(200, 100, 0);
             }
         } else {
-            // Con pieza – ahora permitimos 0 superficies
-            DentalValidationResult validation = DentalSurfaceMatrix.validateCombination(selectedPiece, selectedSurfaces);
+            DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
             if (!validation.isValid()) {
-                msg.append("<b>Error de combinación:</b> ").append(validation.getMessage());
+                msg.append("<b>Error de combinación:</b><br>").append(validation.getMessage());
                 color = Color.RED;
             } else if (len > Hl7Constants.MAX_LENGTH_ODONTOLOGIA) {
-                msg.append("<b>Longitud excede el límite:</b> ").append(len)
+                msg.append("<b>Longitud excede límite:</b> ").append(len)
                         .append(" / ").append(Hl7Constants.MAX_LENGTH_ODONTOLOGIA);
                 color = Color.RED;
             } else {
-                msg.append("Longitud actual: <b>").append(len).append(" / ")
+                msg.append("Longitud: <b>").append(len).append(" / ")
                         .append(Hl7Constants.MAX_LENGTH_ODONTOLOGIA).append("</b> caracteres");
-                if (selectedSurfaces.isEmpty()) {
-                    msg.append("<br><i>Sin caras seleccionadas – Válido</i>");
-                } else {
-                    msg.append("<br>Caras: ").append(selectedSurfaces.stream()
+                if (!surfaces.isEmpty()) {
+                    msg.append("<br>Caras: ").append(surfaces.stream()
                             .map(DentalSurface::name)
+                            .sorted()
                             .collect(Collectors.joining(", ")));
+                } else {
+                    msg.append("<br><i>Sin caras seleccionadas – Válido</i>");
                 }
-                color = (len > Hl7Constants.MAX_LENGTH_ODONTOLOGIA * 0.85)
-                        ? new Color(200, 100, 0)
-                        : new Color(0, 140, 0);
+                if (len > Hl7Constants.MAX_LENGTH_ODONTOLOGIA * 0.85) {
+                    color = new Color(200, 100, 0);
+                }
             }
         }
 
         lengthPreviewLabel.setText("<html>" + msg + "</html>");
         lengthPreviewLabel.setForeground(color);
-
         acceptButton.setEnabled(isValidInput());
     }
 
     private boolean isValidInput() {
         String code = getBenefitCode();
-        if (code.isEmpty() || !code.matches("O\\d{5,6}")) return false; // al menos 5 dígitos + O
+        if (code.isEmpty() || !code.matches("O\\d{5,6}")) {
+            return false;
+        }
 
         DentalPiece piece = getSelectedPiece();
         Set<DentalSurface> surfaces = getSelectedSurfaces();
 
-        // Validación odontológica solo si hay pieza
         if (piece != null) {
-            DentalValidationResult validation = DentalSurfaceMatrix.validateCombination(piece, surfaces);
+            DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
             if (!validation.isValid()) return false;
-        } else {
-            // Sin pieza: solo permitimos superficies vacías
-            if (!surfaces.isEmpty()) return false;
+        } else if (!surfaces.isEmpty()) {
+            return false;
         }
 
-        String hl7 = buildHl7String();
-        return hl7.length() <= Hl7Constants.MAX_LENGTH_ODONTOLOGIA && !hl7.isEmpty();
+        return buildHl7String().length() <= Hl7Constants.MAX_LENGTH_ODONTOLOGIA;
     }
 
     private void onAccept() {
@@ -244,16 +289,16 @@ public class DentalBenefitEditorDialog extends JDialog {
 
             String code = getBenefitCode();
             if (code.isEmpty() || !code.matches("O\\d{5,6}")) {
-                msg.append("• Código inválido (debe ser O + números, ej: O020801)<br>");
+                msg.append("• Código inválido (debe ser O seguido de 5 o 6 dígitos)<br>");
             }
 
             DentalPiece piece = getSelectedPiece();
             Set<DentalSurface> surfaces = getSelectedSurfaces();
 
             if (piece != null) {
-                DentalValidationResult validation = DentalSurfaceMatrix.validateCombination(piece, surfaces);
+                DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
                 if (!validation.isValid()) {
-                    msg.append("• ").append(validation.getMessage()).append("<br>");
+                    msg.append("• ").append(validation.getMessage().replace("\n", "<br>• ")).append("<br>");
                 }
             } else if (!surfaces.isEmpty()) {
                 msg.append("• No se pueden seleccionar caras sin pieza dental<br>");
@@ -265,7 +310,7 @@ public class DentalBenefitEditorDialog extends JDialog {
                         .append(" caracteres (actual: ").append(hl7.length()).append(")<br>");
             }
 
-            JOptionPane.showMessageDialog(this, msg.append("</html>").toString(),
+            JOptionPane.showMessageDialog(this, msg.append("</html>"),
                     "Validación odontológica", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -275,7 +320,7 @@ public class DentalBenefitEditorDialog extends JDialog {
         Set<DentalSurface> surfaces = getSelectedSurfaces();
         String numericCode = benefitTextField.getText().trim();
 
-        this.result = new DentalBenefit(piece, surfaces, numericCode);
+        result = new DentalBenefit(piece, surfaces, numericCode);
 
         if (onAcceptCallback != null) {
             onAcceptCallback.accept(result);
@@ -286,23 +331,15 @@ public class DentalBenefitEditorDialog extends JDialog {
                 ? "Ninguna (válido)"
                 : surfaces.stream().map(Enum::name).sorted().collect(Collectors.joining(", "));
 
-        JOptionPane.showMessageDialog(this,
-                "<html><b>Prestación odontológica guardada correctamente</b><br><br>" +
-                        "Pieza: <b>" + piezaDesc + "</b><br>" +
-                        "Superficies: <b>" + superficiesDesc + "</b><br>" +
-                        "Código: <b>O" + numericCode + "</b><br>" +
-                        "Longitud HL7: <b>" + result.length() + "</b> caracteres</html>",
-                "Éxito",
-                JOptionPane.INFORMATION_MESSAGE);
-
         dispose();
     }
 
-    // Helpers
+    // Helpers =================================================================
+
     private int getSelectedFdi() {
         for (int row = 0; row < toothSelectionTable.getRowCount(); row++) {
-            Boolean included = (Boolean) toothSelectionTable.getValueAt(row, 2);
-            if (Boolean.TRUE.equals(included)) {
+            Boolean selected = (Boolean) toothSelectionTable.getValueAt(row, 2);
+            if (Boolean.TRUE.equals(selected)) {
                 return (Integer) toothSelectionTable.getValueAt(row, 0);
             }
         }
@@ -341,9 +378,7 @@ public class DentalBenefitEditorDialog extends JDialog {
             case PALATAL    -> 6;
         }));
 
-        return ordered.stream()
-                .map(DentalSurface::getCode)
-                .collect(Collectors.joining());
+        return ordered.stream().map(DentalSurface::getCode).collect(Collectors.joining());
     }
 
     private String getBenefitCode() {
@@ -355,7 +390,6 @@ public class DentalBenefitEditorDialog extends JDialog {
     private String buildHl7String() {
         int fdi = getSelectedFdi();
         String pieceStr = (fdi > 0) ? String.valueOf(fdi) : "";
-
         String surfacesStr = getSurfacesCode();
         String benefitCodeStr = getBenefitCode();
 
@@ -363,63 +397,6 @@ public class DentalBenefitEditorDialog extends JDialog {
 
         return String.format("%s^*%s*%s*%s*%s*%s%s",
                 TOTAL_COUNT, pieceStr, surfacesStr, benefitCodeStr, ORIGIN, ITEM_QUANTITY, ASTERISKS);
-    }
-
-    private DefaultTableModel createToothTableModel() {
-        DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"FDI", "Descripción", "Incluida"}, 0
-        ) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 2;
-            }
-
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                return columnIndex == 2 ? Boolean.class : String.class;
-            }
-        };
-
-        Object[][] teeth = {
-                {11, "Incisivo central superior derecho", false},
-                {12, "Incisivo lateral superior derecho", false},
-                {13, "Canino superior derecho", false},
-                {14, "1er premolar superior derecho", false},
-                {15, "2do premolar superior derecho", false},
-                {16, "1er molar superior derecho", false},
-                {17, "2do molar superior derecho", false},
-                {18, "Tercer molar superior derecho", false},
-                {21, "Incisivo central superior izquierdo", false},
-                {22, "Incisivo lateral superior izquierdo", false},
-                {23, "Canino superior izquierdo", false},
-                {24, "1er premolar superior izquierdo", false},
-                {25, "2do premolar superior izquierdo", false},
-                {26, "1er molar superior izquierdo", false},
-                {27, "2do molar superior izquierdo", false},
-                {28, "Tercer molar superior izquierdo", false},
-                {31, "Incisivo central inferior izquierdo", false},
-                {32, "Incisivo lateral inferior izquierdo", false},
-                {33, "Canino inferior izquierdo", false},
-                {34, "1er premolar inferior izquierdo", false},
-                {35, "2do premolar inferior izquierdo", false},
-                {36, "1er molar inferior izquierdo", false},
-                {37, "2do molar inferior izquierdo", false},
-                {38, "Tercer molar inferior izquierdo", false},
-                {41, "Incisivo central inferior derecho", false},
-                {42, "Incisivo lateral inferior derecho", false},
-                {43, "Canino inferior derecho", false},
-                {44, "1er premolar inferior derecho", false},
-                {45, "2do premolar inferior derecho", false},
-                {46, "1er molar inferior derecho", false},
-                {47, "2do molar inferior derecho", false},
-                {48, "Tercer molar inferior derecho", false},
-        };
-
-        for (Object[] row : teeth) {
-            model.addRow(row);
-        }
-
-        return model;
     }
 
     private record SimpleDocumentListener(Runnable action) implements DocumentListener {
@@ -440,6 +417,7 @@ public class DentalBenefitEditorDialog extends JDialog {
         lengthPreviewLabel = new JLabel();
         benefitLabel = new JLabel();
         benefitTextField = new JTextField();
+        denticionComboBox = new JComboBox();
         formatHintLabel = new JLabel();
         toothSelectionScrollPane = new JScrollPane();
         toothSelectionTable = new JTable();
@@ -473,7 +451,10 @@ public class DentalBenefitEditorDialog extends JDialog {
         contentPane.add(benefitTextField, new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
-        contentPane.add(formatHintLabel, new GridBagConstraints(0, 2, 2, 1, 0.0, 0.0,
+        contentPane.add(denticionComboBox, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0,
+            GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
+            new Insets(0, 0, 5, 5), 0, 0));
+        contentPane.add(formatHintLabel, new GridBagConstraints(1, 2, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
@@ -561,6 +542,7 @@ public class DentalBenefitEditorDialog extends JDialog {
     private JLabel lengthPreviewLabel;
     private JLabel benefitLabel;
     private JTextField benefitTextField;
+    private JComboBox denticionComboBox;
     private JLabel formatHintLabel;
     private JScrollPane toothSelectionScrollPane;
     private JTable toothSelectionTable;

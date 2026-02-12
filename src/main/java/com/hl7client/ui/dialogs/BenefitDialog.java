@@ -17,19 +17,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Diálogo central para gestionar (ABM) las prestaciones (médicas y odontológicas).
- * Permite insertar, editar, eliminar y visualizar la lista de beneficios.
+ * Diálogo central para gestionar (ABM) las prestaciones médicas y odontológicas.
+ * Permite insertar, editar, eliminar y confirmar la lista de beneficios.
  */
 public class BenefitDialog extends JDialog {
 
     private static final double MINIMUM_SCREEN_RATIO = 0.40;
-    private static final double SCREEN_RATIO = 0.50;
+    private static final double SCREEN_RATIO = 0.55; // un poco más alto para mejor visibilidad
 
     private final TipoMensaje tipoMensaje;
     private final List<BenefitItem> initialBenefits;
     private BenefitTableModel tableModel;
-
-    // NUEVO: flag que indica si el usuario confirmó (Accept) los cambios
     private boolean confirmed = false;
 
     public BenefitDialog(Window owner, TipoMensaje tipoMensaje, List<BenefitItem> initialBenefits) {
@@ -38,15 +36,9 @@ public class BenefitDialog extends JDialog {
         this.initialBenefits = List.copyOf(initialBenefits);
         initComponents();
         initLogic();
-
         pack();
-
-        // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
-
-        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
-
         setLocationRelativeTo(null);
         installCloseBehavior();
     }
@@ -74,8 +66,9 @@ public class BenefitDialog extends JDialog {
         }});
 
         benefitTable.getColumnModel().getColumn(2).setPreferredWidth(500);  // Contenido
+        benefitTable.getColumnModel().getColumn(3).setPreferredWidth(120);  // Tipo (si existe)
 
-        // Renderer con tooltips
+        // Renderer con tooltips en columna Contenido
         benefitTable.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -111,10 +104,8 @@ public class BenefitDialog extends JDialog {
     private void onInsert() {
         if (tipoMensaje == TipoMensaje.ODONTOLOGIA && tableModel.hasDentalBenefit()) {
             JOptionPane.showMessageDialog(this,
-                    "En odontología solo se permite una prestación.\n" +
-                            "Edite o elimine la existente antes de agregar otra.",
-                    "Límite alcanzado",
-                    JOptionPane.WARNING_MESSAGE);
+                    "En odontología solo se permite una prestación.\nEdite o elimine la existente primero.",
+                    "Límite alcanzado", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -128,34 +119,24 @@ public class BenefitDialog extends JDialog {
     private void onUpdate() {
         int row = benefitTable.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this,
-                    "Seleccione un ítem para editar",
-                    "Sin selección",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione un ítem para editar", "Sin selección", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         BenefitItem item = tableModel.get(row);
-
-        if (item instanceof MedicalBenefitItem medicalItem) {
-            openMedicalEditor(medicalItem);
-        } else if (item instanceof DentalBenefit dentalBenefit) {
-            openDentalEditor(dentalBenefit);
+        if (item instanceof MedicalBenefitItem medical) {
+            openMedicalEditor(medical);
+        } else if (item instanceof DentalBenefit dental) {
+            openDentalEditor(dental);
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Tipo de prestación no editable",
-                    "Información",
-                    JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Tipo de prestación no editable", "Información", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void onDelete() {
         int row = benefitTable.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this,
-                    "Seleccione un ítem para eliminar",
-                    "Sin selección",
-                    JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Seleccione un ítem para eliminar", "Sin selección", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -163,10 +144,8 @@ public class BenefitDialog extends JDialog {
         String tipo = (item instanceof DentalBenefit) ? "odontológica" : "médica";
 
         int confirm = JOptionPane.showConfirmDialog(this,
-                "¿Confirma eliminar esta prestación " + tipo + "?\n" +
-                        "Esta acción no se puede deshacer.",
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION);
+                "¿Confirma eliminar esta prestación " + tipo + "?\nEsta acción no se puede deshacer.",
+                "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
             tableModel.remove(row);
@@ -176,115 +155,99 @@ public class BenefitDialog extends JDialog {
 
     private void openMedicalEditor(BenefitItem editing) {
         int remaining = tableModel.getRemainingChars(editing);
-
         MedicalBenefitEditorDialog dialog = new MedicalBenefitEditorDialog(
-                this,
-                remaining,
-                addedItem -> {
+                this, remaining,
+                added -> {
                     if (editing == null) {
-                        tableModel.add(addedItem);
+                        tableModel.add(added);
                     } else {
-                        int index = tableModel.getAll().indexOf(editing);
-                        if (index >= 0) {
-                            tableModel.replace(index, addedItem);
-                        }
+                        int idx = tableModel.getAll().indexOf(editing);
+                        if (idx >= 0) tableModel.replace(idx, added);
                     }
                     refreshState();
-                }
-        );
+                });
 
         if (editing instanceof MedicalBenefitItem mbi) {
             dialog.setInitialValues(mbi.getQuantityPerType(), mbi.getBenefitCode());
         }
-
         dialog.setVisible(true);
     }
 
     private void openDentalEditor(DentalBenefit editing) {
-        DentalBenefitEditorDialog dialog = new DentalBenefitEditorDialog(
-                this,
-                dentalResult -> {
-                    if (editing != null) {
-                        DentalBenefit updated = dentalResult.with(
-                                dentalResult.getPiece(),
-                                dentalResult.getSurfaces(),
-                                dentalResult.getBenefitCode()
-                        );
-                        int index = tableModel.getAll().indexOf(editing);
-                        if (index >= 0) {
-                            tableModel.replace(index, updated);
-                        }
-                    } else {
-                        tableModel.setAll(List.of(dentalResult));
-                    }
-
-                    refreshState();
-
-                    // Manejar pieza null en el mensaje
-                    String piezaDesc = (dentalResult.getPiece() != null)
-                            ? dentalResult.getPiece().getFdiCode()
-                            : "Ninguna";
-
-                    String superficies = dentalResult.getSurfaces().stream()
-                            .map(DentalSurface::name)
-                            .collect(Collectors.joining(", "));
-                    superficies = superficies.isEmpty() ? "Ninguna" : superficies;
-
-                    String accion = editing != null ? "actualizada" : "agregada";
-                    JOptionPane.showMessageDialog(this,
-                            "Prestación odontológica " + accion + " correctamente.\n\n" +
-                                    "Pieza: " + piezaDesc + "\n" +
-                                    "Superficies: " + superficies + "\n" +
-                                    "Código: " + dentalResult.getBenefitCode() + "\n" +
-                                    "Longitud: " + dentalResult.length() + " caracteres",
-                            "Éxito",
-                            JOptionPane.INFORMATION_MESSAGE);
+        DentalBenefitEditorDialog dialog = new DentalBenefitEditorDialog(this, dentalResult -> {
+            if (editing != null) {
+                int idx = tableModel.getAll().indexOf(editing);
+                if (idx >= 0) {
+                    tableModel.replace(idx, dentalResult);
                 }
-        );
+            } else {
+                tableModel.setAll(List.of(dentalResult));
+            }
+            refreshState();
+
+            if ((dentalResult.getPiece() != null)) {
+                dentalResult.getPiece().getFdiCode();
+            }
+            dentalResult.getSurfaces().stream()
+                    .map(DentalSurface::name)
+                    .collect(Collectors.joining(", "));
+            String accion = editing != null ? "actualizada" : "agregada";
+            String piezaDesc = (dentalResult.getPiece() != null)
+                    ? dentalResult.getPiece().getFdiCode()
+                    : "Ninguna (prestación general)";
+
+            String superficiesDesc = dentalResult.getSurfaces().isEmpty()
+                    ? "Ninguna"
+                    : dentalResult.getSurfaces().stream()
+                    .map(DentalSurface::name)
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+
+            JOptionPane.showMessageDialog(this,
+                    "<html><b>Prestación odontológica " + accion + " correctamente</b><br><br>" +
+                            "Pieza: <b>" + piezaDesc + "</b><br>" +
+                            "Superficies: <b>" + superficiesDesc + "</b><br>" +
+                            "Código: <b>" + dentalResult.getBenefitCode() + "</b><br>" +
+                            "Longitud HL7: <b>" + dentalResult.length() + "</b> caracteres</html>",
+                    "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        });
 
         if (editing != null) {
             dialog.setInitialBenefit(editing);
         }
-
         dialog.setVisible(true);
     }
 
     private void onFinalAccept() {
-        int totalChars = tableModel.getTotalChars();
-        int maxChars = (tipoMensaje == TipoMensaje.ODONTOLOGIA)
+        int total = tableModel.getTotalChars();
+        int max = (tipoMensaje == TipoMensaje.ODONTOLOGIA)
                 ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
                 : Hl7Constants.MAX_LENGTH_MEDICINA;
 
-        if (totalChars > maxChars) {
+        if (total > max) {
             JOptionPane.showMessageDialog(this,
-                    "La longitud total (" + totalChars + ") excede el máximo permitido (" + maxChars + ").\n" +
+                    "Longitud total (" + total + ") excede el máximo permitido (" + max + ").\n" +
                             "Elimine o edite ítems antes de continuar.",
-                    "Límite excedido",
-                    JOptionPane.ERROR_MESSAGE);
+                    "Límite excedido", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         if (tableModel.isEmpty()) {
             int confirm = JOptionPane.showConfirmDialog(this,
-                    "No hay prestaciones cargadas.\n" +
-                            "¿Confirma cerrar sin agregar ninguna prestación?",
-                    "Sin prestaciones",
-                    JOptionPane.YES_NO_OPTION);
-            if (confirm != JOptionPane.YES_OPTION) {
-                return;
-            }
+                    "No hay prestaciones cargadas.\n¿Confirma cerrar sin agregar ninguna?",
+                    "Sin prestaciones", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) return;
         }
 
-        // NUEVO: ¡Aquí marcamos que el usuario confirmó los cambios!
-        this.confirmed = true;
+        confirmed = true;
         dispose();
     }
 
     private void refreshState() {
-        int selectedRow = benefitTable.getSelectedRow();
-        boolean hasSelection = selectedRow >= 0;
+        boolean hasSelection = benefitTable.getSelectedRow() >= 0;
 
-        // Habilitar/deshabilitar botones
+        // Botones
         boolean canInsert = (tipoMensaje != TipoMensaje.ODONTOLOGIA) || !tableModel.hasDentalBenefit();
         insertButton.setEnabled(canInsert);
         insertButton.setToolTipText(canInsert ? "Agregar nueva prestación" : "Límite alcanzado (solo 1 en odontología)");
@@ -293,76 +256,59 @@ public class BenefitDialog extends JDialog {
         deleteButton.setEnabled(hasSelection);
 
         // Estado de caracteres
-        int total = tableModel.getTotalChars();
+        int used = tableModel.getTotalChars();
         int max = (tipoMensaje == TipoMensaje.ODONTOLOGIA)
                 ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
                 : Hl7Constants.MAX_LENGTH_MEDICINA;
-
+        int remaining = max - used;
         int count = tableModel.getRowCount();
-        String tipoDesc = (tipoMensaje == TipoMensaje.ODONTOLOGIA) ? "Odontología" : "Medicina";
 
-        // Título informativo
-        String title = String.format("Gestión de Prestaciones - %s (%d %s - %d / %d caracteres)",
-                tipoDesc,
-                count,
-                count == 1 ? "prestación" : "prestaciones",
-                total,
-                max);
+        String tipoDesc = (tipoMensaje == TipoMensaje.ODONTOLOGIA) ? "Odontología" : "Medicina";
+        String countText = count + " " + (count == 1 ? "prestación" : "prestaciones");
+
+        // Título dinámico con restantes
+        String title = String.format(
+                "Gestión de Prestaciones - %s • %s • %d / %d chars (restan %d)",
+                tipoDesc, countText, used, max, remaining
+        );
 
         Color bgColor = UIManager.getColor("Panel.background");
 
-        if (total > max) {
-            title += " - ¡Excedido!";
+        if (remaining < 0) {
+            title += " → ¡Excedido!";
             bgColor = new Color(255, 220, 220); // rojo claro
-        } else if (total > max * 0.9) {
-            title += " - ¡Muy cerca!";
-            bgColor = new Color(255, 235, 200); // naranja claro
-        } else if (total > max * 0.75) {
-            title += " - Acercándose";
+        } else if (remaining < 50) {
+            title += " → ¡Muy poco!";
+            bgColor = new Color(255, 235, 180); // naranja claro
+        } else if (remaining < 150) {
+            title += " → Cerca del límite";
             bgColor = new Color(255, 245, 200); // ámbar suave
+        } else if (remaining < 300) {
+            title += " → Espacio moderado";
         }
 
         setTitle(title);
         getContentPane().setBackground(bgColor);
 
-        // Actualizar summaryLabel
+        // Summary label (mantenemos como respaldo visual)
         if (summaryLabel != null) {
-            String summaryText;
-            if (tableModel.isEmpty()) {
-                summaryText = "No hay prestaciones cargadas aún";
-            } else {
-                summaryText = String.format("%d %s cargada%s • %d / %d caracteres usados",
-                        count,
-                        count == 1 ? "prestación" : "prestaciones",
-                        count == 1 ? "" : "s",
-                        total,
-                        max);
-            }
+            String summary = tableModel.isEmpty()
+                    ? "No hay prestaciones cargadas aún"
+                    : String.format("%d %s • %d / %d chars usados (restan %d)",
+                    count, count == 1 ? "prestación" : "prestaciones", used, max, remaining);
 
-            summaryLabel.setText(summaryText);
-            summaryLabel.setForeground(total > max ? Color.RED : new Color(60, 60, 60)); // gris oscuro
+            summaryLabel.setText(summary);
+            summaryLabel.setForeground(remaining < 0 ? Color.RED :
+                    remaining < 100 ? new Color(200, 100, 0) : new Color(60, 60, 60));
         }
     }
 
-    /**
-     * Indica si el usuario confirmó (presionó Accept) los cambios realizados en este diálogo.
-     * @return true si se presionó Accept y se pasaron todas las validaciones, false si se canceló o cerró de otra forma
-     */
     public boolean isConfirmed() {
         return confirmed;
     }
 
-    /**
-     * Devuelve la lista actual de beneficios.
-     * Si el usuario NO confirmó (canceló), devuelve la lista inicial (sin modificaciones).
-     */
     public List<BenefitItem> getBenefits() {
-        if (confirmed) {
-            return tableModel.getAll();
-        } else {
-            // Si canceló, devolvemos los valores originales para no "contaminar" la lista del llamador
-            return List.copyOf(initialBenefits);
-        }
+        return confirmed ? tableModel.getAll() : List.copyOf(initialBenefits);
     }
 
     private void installCloseBehavior() {

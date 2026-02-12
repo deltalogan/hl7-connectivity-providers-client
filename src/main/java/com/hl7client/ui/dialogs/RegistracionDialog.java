@@ -26,6 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Diálogo principal para registrar una consulta o prestación HL7.
+ * Incluye campos de identificación, fechas, prestaciones y envío al controlador.
+ */
 public class RegistracionDialog extends JDialog {
 
     private static final double MINIMUM_SCREEN_RATIO = 0.40;
@@ -43,11 +47,7 @@ public class RegistracionDialog extends JDialog {
     private DatePicker altaDatePicker;
     private DatePicker fecdifDatePicker;
 
-    public RegistracionDialog(
-            Window owner,
-            Hl7Controller hl7Controller,
-            String titulo
-    ) {
+    public RegistracionDialog(Window owner, Hl7Controller hl7Controller, String titulo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.hl7Controller = Objects.requireNonNull(hl7Controller);
         setTitle(Objects.requireNonNullElse(titulo, "Registración"));
@@ -55,16 +55,12 @@ public class RegistracionDialog extends JDialog {
         initComponents();
         initDatePickers();
         initTipoMensajeControls();
-
         pack();
 
-        // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
-
-        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
-
         setLocationRelativeTo(null);
+
         initActions();
         initShortcuts();
         installCloseBehavior();
@@ -79,7 +75,6 @@ public class RegistracionDialog extends JDialog {
         // Foco inicial
         SwingUtilities.invokeLater(() -> credenTextField.requestFocusInWindow());
 
-        // Inicializar resumen
         updateBenefitsSummary();
     }
 
@@ -96,8 +91,7 @@ public class RegistracionDialog extends JDialog {
                 JOptionPane.showMessageDialog(this,
                         "No se puede cambiar el tipo de mensaje una vez que se han cargado prestaciones.\n" +
                                 "Limpie las prestaciones primero si desea cambiar el tipo.",
-                        "Tipo bloqueado",
-                        JOptionPane.WARNING_MESSAGE);
+                        "Tipo bloqueado", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -133,21 +127,18 @@ public class RegistracionDialog extends JDialog {
                 JOptionPane.showMessageDialog(this,
                         "No había tipo de mensaje seleccionado. Se seleccionó 'Medicina' por defecto.\n" +
                                 "Puede cambiarlo antes de cargar prestaciones.",
-                        "Tipo por defecto",
-                        JOptionPane.INFORMATION_MESSAGE);
+                        "Tipo por defecto", JOptionPane.INFORMATION_MESSAGE);
                 updateBenefitsSummary();
             }
 
             BenefitDialog dialog = getBenefitDialog(effectiveTipo);
             dialog.setVisible(true);
 
-            // Cambio clave: solo actualizamos si el usuario confirmó (Accept)
             if (dialog.isConfirmed()) {
                 benefits.clear();
                 benefits.addAll(dialog.getBenefits());
                 updateBenefitsSummary();
             }
-            // Si canceló → no tocamos benefits (mantiene el estado anterior)
         });
     }
 
@@ -170,13 +161,14 @@ public class RegistracionDialog extends JDialog {
             benefitsSummaryLabel.setForeground(Color.GRAY);
             benefitsSummaryLabel.setToolTipText("Haga clic en 'View / Edit Benefits' para agregar o editar prestaciones");
             acceptButton.setEnabled(true);
+            acceptButton.setToolTipText(null);
             return;
         }
 
-        // Determinamos tipo (con chequeo de seguridad)
         boolean isDental = benefits.get(0) instanceof com.hl7client.model.dental.DentalBenefit;
         int maxChars = isDental ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA : Hl7Constants.MAX_LENGTH_MEDICINA;
         int usedChars = benefits.stream().mapToInt(BenefitItem::length).sum();
+        int remaining = maxChars - usedChars;
         int count = benefits.size();
 
         double porcentaje = usedChars * 100.0 / maxChars;
@@ -185,27 +177,36 @@ public class RegistracionDialog extends JDialog {
         String restriccion = isDental ? " (máximo 1 permitida)" : "";
 
         String text = String.format(
-                "<html>%d prestación%s %s<br>usadas <b>%d / %d</b> caracteres (%.1f%%)%s</html>",
-                count, (count == 1 ? "" : "es"), tipoText, usedChars, maxChars, porcentaje, restriccion
+                "<html>%d prestación%s %s<br>usadas <b>%d / %d</b> caracteres (%.1f%%)<br>restan <b>%d</b>%s</html>",
+                count, (count == 1 ? "" : "es"), tipoText, usedChars, maxChars, porcentaje, remaining, restriccion
         );
 
         benefitsSummaryLabel.setText(text);
 
+        // Colores y tooltips consistentes con BenefitDialog
         if (usedChars > maxChars) {
             benefitsSummaryLabel.setForeground(Color.RED);
-            benefitsSummaryLabel.setToolTipText("<html><b>¡Excede el límite máximo permitido!</b><br>Corrija antes de aceptar la registración.</html>");
-        } else if (porcentaje > 90) {
-            benefitsSummaryLabel.setForeground(new Color(200, 80, 0));   // naranja oscuro
-            benefitsSummaryLabel.setToolTipText("<html>Muy cerca del límite máximo<br>(restan " + (maxChars - usedChars) + " caracteres)</html>");
-        } else if (porcentaje > 70) {
-            benefitsSummaryLabel.setForeground(new Color(180, 140, 0));  // ámbar
-            benefitsSummaryLabel.setToolTipText("<html>Acercándose al límite<br>(restan " + (maxChars - usedChars) + " caracteres)</html>");
+            benefitsSummaryLabel.setToolTipText("<html><b>¡Excede el límite máximo permitido!</b><br>" +
+                    "Corrija antes de aceptar la registración.</html>");
+            acceptButton.setToolTipText("No se puede aceptar: excede el límite de caracteres en prestaciones");
+        } else if (porcentaje > 90 || remaining < 50) {
+            benefitsSummaryLabel.setForeground(new Color(200, 80, 0)); // naranja oscuro
+            benefitsSummaryLabel.setToolTipText("<html><b>Muy cerca del límite máximo</b><br>" +
+                    "Restan solo " + remaining + " caracteres<br>Revise antes de continuar.</html>");
+            acceptButton.setToolTipText(null);
+        } else if (porcentaje > 70 || remaining < 150) {
+            benefitsSummaryLabel.setForeground(new Color(180, 140, 0)); // ámbar
+            benefitsSummaryLabel.setToolTipText("<html>Acercándose al límite<br>Restan " + remaining + " caracteres</html>");
+            acceptButton.setToolTipText(null);
         } else if (isDental) {
-            benefitsSummaryLabel.setForeground(new Color(0, 140, 0));    // verde oscuro
+            benefitsSummaryLabel.setForeground(new Color(0, 140, 0)); // verde oscuro
             benefitsSummaryLabel.setToolTipText("<html>Prestación odontológica válida<br>(solo 1 permitida)</html>");
+            acceptButton.setToolTipText(null);
         } else {
-            benefitsSummaryLabel.setForeground(new Color(0, 100, 200));  // azul
-            benefitsSummaryLabel.setToolTipText("<html>Prestaciones médicas cargadas correctamente</html>");
+            benefitsSummaryLabel.setForeground(new Color(0, 100, 200)); // azul
+            benefitsSummaryLabel.setToolTipText("<html>Prestaciones médicas cargadas correctamente<br>" +
+                    "Restan " + remaining + " caracteres</html>");
+            acceptButton.setToolTipText(null);
         }
 
         updateAcceptButtonState();
@@ -231,9 +232,6 @@ public class RegistracionDialog extends JDialog {
         }
     }
 
-    // Resto del código sin cambios (initActions, doRegistracion, buildRequest, etc.)
-    // ... (mantengo igual todo lo que no necesita modificación en esta ronda)
-
     private void initActions() {
         Action acceptAction = new AcceptAction<>(
                 "Accept",
@@ -255,8 +253,7 @@ public class RegistracionDialog extends JDialog {
         if (tipoMensaje == null) {
             JOptionPane.showMessageDialog(this,
                     "Debe seleccionar un tipo de mensaje (Odontología o Medicina).",
-                    "Tipo de mensaje requerido",
-                    JOptionPane.WARNING_MESSAGE);
+                    "Tipo de mensaje requerido", JOptionPane.WARNING_MESSAGE);
             return null;
         }
 
@@ -266,9 +263,7 @@ public class RegistracionDialog extends JDialog {
     private void onRegistracionResult(Hl7Result<RegistracionResponse> result) {
         if (result == null) {
             JOptionPane.showMessageDialog(this,
-                    "Error técnico inesperado",
-                    getTitle(),
-                    JOptionPane.ERROR_MESSAGE);
+                    "Error técnico inesperado", getTitle(), JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -291,7 +286,6 @@ public class RegistracionDialog extends JDialog {
 
         request.setModo(textValue(modoTextField));
         request.setTipo(intValue(tipoTextField));
-
         request.setCreden(textValue(credenTextField));
         request.setAlta(toHl7(altaDatePicker.getDate()));
         request.setFecdif(toHl7(fecdifDatePicker.getDate()));
@@ -323,9 +317,7 @@ public class RegistracionDialog extends JDialog {
         BenefitRequestMapper.apply(request, benefits);
 
         if (!powerBuilderTextField.getText().isBlank()) {
-            request.setPowerBuilder(
-                    powerBuilderTextField.getText().trim().equals("1")
-            );
+            request.setPowerBuilder(powerBuilderTextField.getText().trim().equals("1"));
         }
 
         return request;
@@ -342,7 +334,8 @@ public class RegistracionDialog extends JDialog {
         JOptionPane.showMessageDialog(this, mensaje, getTitle(), JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // Helpers
+    // Helpers =================================================================
+
     private static String toHl7(LocalDate date) {
         return date != null ? date.format(HL7_DATE_FORMAT) : "";
     }

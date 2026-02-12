@@ -14,17 +14,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * TableModel para la tabla de beneficios en BenefitDialog.
- * Muestra información clara y útil para el usuario.
- * Soporta DentalBenefit con pieza null.
+ * Modelo de tabla para mostrar prestaciones (médicas y odontológicas) en BenefitDialog.
+ * Proporciona columnas claras, tooltips detallados y reglas de negocio para inserción/orden.
  */
 public class BenefitTableModel extends AbstractTableModel {
 
-    private static final String[] COLUMNS = {"Cantidad", "Chars", "Contenido", "Tipo"};
+    private static final String[] COLUMN_NAMES = {"Cant.", "Chars", "Descripción", "Tipo"};
 
     private final List<BenefitItem> data = new ArrayList<>();
-
-    private TipoMensaje cachedTipo = null;
+    private TipoMensaje cachedType = null;
 
     // =======================
     // TableModel básico
@@ -36,25 +34,24 @@ public class BenefitTableModel extends AbstractTableModel {
 
     @Override
     public int getColumnCount() {
-        return COLUMNS.length;
+        return COLUMN_NAMES.length;
     }
 
     @Override
     public String getColumnName(int column) {
-        return COLUMNS[column];
+        return COLUMN_NAMES[column];
     }
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         if (rowIndex < 0 || rowIndex >= data.size()) return null;
-
         BenefitItem item = data.get(rowIndex);
 
         return switch (columnIndex) {
-            case 0 -> getCantidad(item);
+            case 0 -> getQuantityDisplay(item);
             case 1 -> item.length();
-            case 2 -> getContenidoLegible(item);
-            case 3 -> getTipoDescripcion(item);
+            case 2 -> getDescriptionDisplay(item);
+            case 3 -> getTypeDisplay(item);
             default -> null;
         };
     }
@@ -69,112 +66,95 @@ public class BenefitTableModel extends AbstractTableModel {
     }
 
     // =======================
-    // Métodos de datos
+    // Métodos de visualización
     // =======================
-    private int getCantidad(BenefitItem item) {
-        if (item == null) return 0;
+    private int getQuantityDisplay(BenefitItem item) {
         if (item instanceof MedicalBenefitItem mbi) return mbi.getQuantityPerType();
         if (item instanceof DentalBenefit) return 1;
         return 0;
     }
 
-    private String getContenidoLegible(BenefitItem item) {
+    private String getDescriptionDisplay(BenefitItem item) {
         if (item instanceof MedicalBenefitItem mbi) {
             return String.format("%d × %s", mbi.getQuantityPerType(), mbi.getBenefitCode());
         }
+
         if (item instanceof DentalBenefit db) {
-            String surfaces = db.getSurfaces().stream()
-                    .map(DentalSurface::getCode)
-                    .collect(Collectors.joining(""));
-            String surfDesc = surfaces.isEmpty() ? "sin caras" : surfaces;
-
-            String piezaDesc = (db.getPiece() != null)
+            String pieza = (db.getPiece() != null)
                     ? "Pieza " + db.getPiece().getFdiCode()
-                    : "Sin pieza";
+                    : "General (sin pieza)";
 
-            return String.format("%s (%s) - %s",
-                    piezaDesc, surfDesc, db.getBenefitCode());
+            String superficies = db.getSurfaces().stream()
+                    .map(DentalSurface::getCode)
+                    .sorted()
+                    .collect(Collectors.joining(""));
+            String surfDesc = superficies.isEmpty() ? "sin caras" : superficies;
+
+            return String.format("%s (%s) - %s", pieza, surfDesc, db.getBenefitCode());
         }
 
         String value = item.getValue();
-        return (value != null && !value.isBlank())
-                ? (value.length() > 60 ? value.substring(0, 57) + "..." : value)
-                : "(sin valor)";
+        if (value == null || value.isBlank()) return "(sin valor)";
+        return value.length() > 80 ? value.substring(0, 77) + "..." : value;
     }
 
-    private String getTipoDescripcion(BenefitItem item) {
+    private String getTypeDisplay(BenefitItem item) {
         if (item instanceof DentalBenefit) return "Odontológica";
         if (item instanceof MedicalBenefitItem) return "Médica";
         return "Desconocido";
     }
 
     /**
-     * Tooltip detallado y formateado para la columna "Contenido"
+     * Tooltip rico y detallado para la columna "Descripción" (col 2)
      */
     public String getTooltipAt(int row, int column) {
         if (row < 0 || row >= data.size() || column != 2) return null;
-
         BenefitItem item = data.get(row);
 
+        StringBuilder sb = new StringBuilder("<html><b>Detalle:</b><br>");
+
         if (item instanceof DentalBenefit db) {
-            String surfaces = db.getSurfaces().stream()
-                    .map(Enum::name)
+            String pieza = (db.getPiece() != null)
+                    ? db.getPiece().getFdiCode() + " (" + db.getPiece().getType().name().toLowerCase() + ")"
+                    : "Ninguna (prestación general)";
+
+            String caras = db.getSurfaces().stream()
+                    .map(s -> s.name() + " (" + s.getCode() + ")")
                     .sorted()
                     .collect(Collectors.joining(", "));
+            caras = caras.isEmpty() ? "Ninguna" : caras;
 
-            String piezaTooltip = (db.getPiece() != null)
-                    ? db.getPiece().getFdiCode()
-                    : "Ninguna";
-
-            return String.format("<html><b>Pieza:</b> %s<br>" +
-                            "<b>Caras:</b> %s<br>" +
-                            "<b>Código:</b> %s<br>" +
-                            "<b>HL7:</b> %s<br>" +
-                            "<b>Longitud:</b> %d caracteres</html>",
-                    piezaTooltip,
-                    surfaces.isEmpty() ? "Ninguna" : surfaces,
-                    db.getBenefitCode(),
-                    db.getValue(),
-                    db.length());
+            sb.append("Pieza: ").append(pieza).append("<br>");
+            sb.append("Caras: ").append(caras).append("<br>");
+            sb.append("Código: ").append(db.getBenefitCode()).append("<br>");
+        } else if (item instanceof MedicalBenefitItem mbi) {
+            sb.append("Cantidad: ").append(mbi.getQuantityPerType()).append("<br>");
+            sb.append("Código: ").append(mbi.getBenefitCode()).append("<br>");
         }
 
-        if (item instanceof MedicalBenefitItem mbi) {
-            return String.format("<html><b>Cantidad:</b> %d<br>" +
-                            "<b>Código:</b> %s<br>" +
-                            "<b>HL7:</b> %s<br>" +
-                            "<b>Longitud:</b> %d caracteres</html>",
-                    mbi.getQuantityPerType(),
-                    mbi.getBenefitCode(),
-                    mbi.getValue(),
-                    mbi.length());
-        }
+        sb.append("HL7: <code>").append(item.getValue()).append("</code><br>");
+        sb.append("Longitud: <b>").append(item.length()).append("</b> caracteres");
 
-        String value = item.getValue();
-        return value != null
-                ? String.format("<html><b>HL7:</b> %s<br><b>Longitud:</b> %d caracteres</html>",
-                value, item.length())
-                : "Sin datos";
+        return sb.append("</html>").toString();
     }
 
     // =======================
-    // API pública
+    // API pública (modificación de datos)
     // =======================
     public void add(BenefitItem item) {
-        if (item == null) {
-            throw new IllegalArgumentException("No se puede agregar un beneficio nulo");
-        }
+        if (item == null) throw new IllegalArgumentException("No se puede agregar un beneficio nulo");
         validateInsert(item);
         data.add(item);
-        inferTipoIfNeeded();
-        sort();
+        inferTypeIfNeeded();
+        sortData();
         fireTableDataChanged();
     }
 
     public void remove(int index) {
         if (index >= 0 && index < data.size()) {
             data.remove(index);
-            if (data.isEmpty()) cachedTipo = null;
-            sort();
+            if (data.isEmpty()) cachedType = null;
+            sortData();
             fireTableDataChanged();
         }
     }
@@ -182,7 +162,7 @@ public class BenefitTableModel extends AbstractTableModel {
     public void replace(int index, BenefitItem newItem) {
         if (index >= 0 && index < data.size() && newItem != null) {
             data.set(index, newItem);
-            sort();
+            sortData();
             fireTableRowsUpdated(index, index);
         }
     }
@@ -191,9 +171,9 @@ public class BenefitTableModel extends AbstractTableModel {
         data.clear();
         if (items != null && !items.isEmpty()) {
             data.addAll(items);
-            inferTipoIfNeeded();
+            inferTypeIfNeeded();
         }
-        sort();
+        sortData();
         fireTableDataChanged();
     }
 
@@ -206,7 +186,7 @@ public class BenefitTableModel extends AbstractTableModel {
     }
 
     // =======================
-    // Reglas de negocio y estado
+    // Estado y cálculos
     // =======================
     public int getTotalChars() {
         return data.stream().mapToInt(BenefitItem::length).sum();
@@ -233,26 +213,35 @@ public class BenefitTableModel extends AbstractTableModel {
     }
 
     public boolean isDental() {
-        if (cachedTipo != null) return cachedTipo == TipoMensaje.ODONTOLOGIA;
+        if (cachedType != null) return cachedType == TipoMensaje.ODONTOLOGIA;
         return hasDentalBenefit();
     }
 
     // =======================
-    // Métodos internos
+    // Internos
     // =======================
-    private void inferTipoIfNeeded() {
-        if (cachedTipo == null && !data.isEmpty()) {
-            cachedTipo = data.get(0) instanceof DentalBenefit
+    private void inferTypeIfNeeded() {
+        if (cachedType == null && !data.isEmpty()) {
+            cachedType = data.get(0) instanceof DentalBenefit
                     ? TipoMensaje.ODONTOLOGIA
                     : TipoMensaje.MEDICINA;
         }
     }
 
-    private void sort() {
+    private void sortData() {
         if (isDental()) {
-            data.sort(Comparator.comparingInt(BenefitItem::getOrden));
+            data.sort(Comparator.comparingInt(item -> {
+                if (item instanceof DentalBenefit db && db.getPiece() != null) {
+                    try {
+                        return Integer.parseInt(db.getPiece().getFdiCode());
+                    } catch (NumberFormatException e) {
+                        return 9999;
+                    }
+                }
+                return item.getOrden();
+            }));
         }
-        // En medicina mantenemos orden de inserción
+        // Medicina: mantener orden de inserción
     }
 
     private void validateInsert(BenefitItem item) {

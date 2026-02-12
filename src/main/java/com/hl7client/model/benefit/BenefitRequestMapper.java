@@ -8,32 +8,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mapper responsable de transformar una lista de BenefitItem en los campos param1, param2, param3
- * del RegistracionRequest, respetando las reglas HL7 específicas para odontología y medicina.
+ * Mapper que transforma una lista de {@link BenefitItem} en los campos param1, param2, param3
+ * del {@link RegistracionRequest}, respetando estrictamente las reglas HL7 observadas.
  * <ul>
- *   <li><b>Odontología</b>: máximo 1 ítem → se coloca completo en param1 (ej: "1^*35*V*O020801*P*1**")</li>
- *   <li><b>Medicina</b>: múltiples ítems → cantidad total al inicio, separador '|' entre ítems<br>
- *       Formato: <code>total^*código*cantidad**|*código*cantidad**|...</code></li>
- *   <li><b>Sin prestaciones</b>: param1 = "0^*0*0**", param2 y param3 vacíos (requerido por el endpoint)</li>
+ *   <li><b>Odontología</b>: máximo 1 ítem → valor completo en param1 (ej: "1^*35*V*O020801*P*1**")</li>
+ *   <li><b>Medicina</b>: múltiples ítems → total al inicio + separador '|' entre segmentos<br>
+ *       Ejemplo: "3^*660001*2**|*660015*1**"</li>
+ *   <li><b>Sin prestaciones</b>: param1 = "0^*0*0**", param2 y param3 vacíos</li>
  * </ul>
+ * <p>
+ * Realiza validaciones defensivas de longitud y consistencia de tipos.
  */
 public final class BenefitRequestMapper {
 
-    private static final String EMPTY_PARAM1_VALUE = "0^*0*0**";
+    private static final String EMPTY_PARAM_VALUE = "0^*0*0**";
 
     private BenefitRequestMapper() {
-        // Clase estática
+        // Clase utilitaria estática
     }
 
     /**
-     * Aplica el mapeo de la lista de benefits al RegistracionRequest.
+     * Mapea la lista de prestaciones al request HL7.
+     * Modifica directamente los campos param1, param2 y param3 del request.
      *
-     * @param request  el request a modificar
+     * @param request  request a modificar (no null)
      * @param benefits lista de prestaciones (puede ser null o vacía)
-     * @throws IllegalArgumentException si se detecta mezcla de tipos, más de 1 odontología,
-     *                                  o si la longitud total excede el límite permitido
+     * @throws IllegalArgumentException si hay mezcla de tipos, más de 1 odontológica,
+     *                                  o si la longitud total excede los límites permitidos
      */
     public static void apply(RegistracionRequest request, List<BenefitItem> benefits) {
+        if (request == null) {
+            throw new IllegalArgumentException("El request no puede ser null");
+        }
+
         if (benefits == null || benefits.isEmpty()) {
             setEmptyParams(request);
             return;
@@ -48,7 +55,7 @@ public final class BenefitRequestMapper {
     }
 
     private static void setEmptyParams(RegistracionRequest request) {
-        request.setParam1(EMPTY_PARAM1_VALUE);
+        request.setParam1(EMPTY_PARAM_VALUE);
         request.setParam2("");
         request.setParam3("");
     }
@@ -58,14 +65,13 @@ public final class BenefitRequestMapper {
         boolean hasMedical = benefits.stream().anyMatch(b -> b instanceof MedicalBenefitItem);
 
         if (hasDental && hasMedical) {
-            throw new IllegalArgumentException(
-                    "No se permiten mezclar prestaciones odontológicas y médicas en la misma registración");
+            throw new IllegalArgumentException("No se permiten mezclar prestaciones odontológicas y médicas");
         }
 
         if (hasDental) {
             if (benefits.size() > 1) {
                 throw new IllegalArgumentException(
-                        "Solo se permite una prestación odontológica por registración (se encontraron " + benefits.size() + ")");
+                        "Solo se permite una prestación odontológica (se encontraron " + benefits.size() + ")");
             }
             return BenefitType.DENTAL;
         }
@@ -74,17 +80,20 @@ public final class BenefitRequestMapper {
     }
 
     private static void handleDental(RegistracionRequest request, List<BenefitItem> benefits) {
-        BenefitItem item = benefits.get(0);
+        DentalBenefit item = (DentalBenefit) benefits.get(0);
         String value = item.getValue();
 
-        // Validación de longitud (defensa extra, aunque la UI ya debería controlarlo)
-        if (value != null && value.length() > Hl7Constants.MAX_LENGTH_ODONTOLOGIA) {
-            throw new IllegalArgumentException(
-                    "Prestación odontológica excede el límite de " + Hl7Constants.MAX_LENGTH_ODONTOLOGIA +
-                            " caracteres (longitud actual: " + value.length() + ")");
+        if (value == null || value.isBlank()) {
+            request.setParam1(EMPTY_PARAM_VALUE);
+        } else {
+            if (value.length() > Hl7Constants.MAX_LENGTH_ODONTOLOGIA) {
+                throw new IllegalArgumentException(
+                        "Prestación odontológica excede límite de " + Hl7Constants.MAX_LENGTH_ODONTOLOGIA +
+                                " caracteres (actual: " + value.length() + ")");
+            }
+            request.setParam1(value);
         }
 
-        request.setParam1(value != null && !value.isBlank() ? value : EMPTY_PARAM1_VALUE);
         request.setParam2("");
         request.setParam3("");
     }
@@ -100,32 +109,27 @@ public final class BenefitRequestMapper {
             return;
         }
 
-        int totalQuantity = items.stream()
-                .mapToInt(MedicalBenefitItem::getQuantityPerType)
-                .sum();
-
-        if (totalQuantity == 0) {
+        int totalQty = items.stream().mapToInt(MedicalBenefitItem::getQuantityPerType).sum();
+        if (totalQty == 0) {
             setEmptyParams(request);
             return;
         }
 
         StringBuilder sb = new StringBuilder();
 
-        // Primer segmento: total ^ * código1 * cantidad1 **
+        // Primer segmento: total^*código*cantidad**
         MedicalBenefitItem first = items.get(0);
-        sb.append(totalQuantity)
-                .append("^")
-                .append("*")
+        sb.append(totalQty)
+                .append("^*")
                 .append(first.getBenefitCode())
                 .append("*")
                 .append(first.getQuantityPerType())
                 .append("**");
 
-        // Ítems siguientes: | * código * cantidad **
+        // Resto: |*código*cantidad**
         for (int i = 1; i < items.size(); i++) {
             MedicalBenefitItem item = items.get(i);
-            sb.append("|")
-                    .append("*")
+            sb.append("|*")
                     .append(item.getBenefitCode())
                     .append("*")
                     .append(item.getQuantityPerType())
@@ -134,45 +138,47 @@ public final class BenefitRequestMapper {
 
         String fullContent = sb.toString();
 
-        // Validación de longitud total (defensa extra)
         if (fullContent.length() > Hl7Constants.MAX_LENGTH_MEDICINA) {
             throw new IllegalArgumentException(
-                    "Las prestaciones médicas exceden el límite total permitido de " +
+                    "Prestaciones médicas exceden límite total de " +
                             Hl7Constants.MAX_LENGTH_MEDICINA + " caracteres (actual: " + fullContent.length() + ")");
         }
 
-        List<String> chunks = chunkContent(fullContent);
+        List<String> chunks = splitIntoParams(fullContent);
 
-        request.setParam1(chunks.isEmpty() ? EMPTY_PARAM1_VALUE : chunks.get(0));
+        request.setParam1(chunks.isEmpty() ? EMPTY_PARAM_VALUE : chunks.get(0));
         request.setParam2(chunks.size() > 1 ? chunks.get(1) : "");
         request.setParam3(chunks.size() > 2 ? chunks.get(2) : "");
     }
 
     /**
-     * Divide el contenido en fragmentos de longitud máxima.
-     * <p>
-     * Nota: corta en cualquier punto (el endpoint actual parece tolerarlo).
-     * Si en el futuro se requiere no cortar en medio de un segmento (respetando '|'),
-     * se puede implementar una versión más inteligente.
+     * Divide el contenido en fragmentos de hasta MAX_LENGTH_PER_PARAM caracteres.
+     * Intenta no cortar en medio de un segmento (**), pero si no es posible, corta donde corresponda.
      */
-    private static List<String> chunkContent(String content) {
+    private static List<String> splitIntoParams(String content) {
         List<String> chunks = new ArrayList<>();
-        if (content == null || content.isEmpty()) {
-            return chunks;
+        if (content == null || content.isEmpty()) return chunks;
+
+        int maxLen = Hl7Constants.MAX_LENGTH_PER_PARAM;
+        int start = 0;
+
+        while (start < content.length()) {
+            int end = Math.min(start + maxLen, content.length());
+
+            // Intentar no cortar en medio de un segmento (buscar el último "**" antes del límite)
+            int lastSegmentEnd = content.lastIndexOf("**", end);
+            if (lastSegmentEnd >= start && lastSegmentEnd + 2 <= end) {
+                end = lastSegmentEnd + 2; // incluir el **
+            }  // Si no hay ** cerca, cortar en cualquier punto (el backend parece tolerarlo)
+
+
+            chunks.add(content.substring(start, end));
+            start = end;
         }
 
-        int index = 0;
-        while (index < content.length()) {
-            int end = Math.min(index + Hl7Constants.MAX_LENGTH_PER_PARAM, content.length());
-            chunks.add(content.substring(index, end));
-            index = end;
-        }
         return chunks;
     }
 
-    /**
-     * Enum interno para clasificar el tipo de benefits.
-     */
     private enum BenefitType {
         DENTAL, MEDICAL
     }

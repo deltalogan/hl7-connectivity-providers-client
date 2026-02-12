@@ -14,21 +14,23 @@ import java.awt.*;
 import java.util.function.Consumer;
 
 /**
- * Editor para agregar/editar prestaciones médicas individuales.
- * Permite ingresar cantidad y código de prestación, con control de longitud restante.
+ * Editor para agregar o modificar una prestación médica individual.
+ * Controla cantidad (1-99), código (6 dígitos), y longitud restante del campo HL7.
  */
 public class MedicalBenefitEditorDialog extends JDialog {
 
     private static final double MINIMUM_SCREEN_RATIO = 0.30;
-    private static final double SCREEN_RATIO = 0.40;
+    private static final double SCREEN_RATIO = 0.42;
 
     private static final int MAX_QTY_PER_TYPE = 99;
-    private static final String CODE_REGEX = "\\d{6}"; // exactamente 6 dígitos
+    private static final String CODE_REGEX = "\\d{6}";
 
     private final int initialRemainingChars;
     private int currentRemainingChars;
     private final Consumer<BenefitItem> onItemAdded;
-    private boolean isEditionMode = false; // Para saber si es edición o inserción
+
+    private boolean isEditionMode = false;
+    private int editingItemLength = 0; // Longitud del ítem que estamos editando (para restar al validar)
 
     public MedicalBenefitEditorDialog(
             Window owner,
@@ -41,42 +43,50 @@ public class MedicalBenefitEditorDialog extends JDialog {
         this.onItemAdded = onItemAdded;
 
         initComponents();
-        initLogic();
+        postInit();
 
         pack();
-
-        // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
-
-        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
-
         setLocationRelativeTo(null);
         installCloseBehavior();
+
+        // Foco inicial en el código
+        SwingUtilities.invokeLater(() -> benefitTextField.requestFocusInWindow());
     }
 
-    private void initLogic() {
+    private void postInit() {
         benefitSpinner.setModel(new SpinnerNumberModel(1, 1, MAX_QTY_PER_TYPE, 1));
 
-        // Listener combinado para actualización en tiempo real
         var updateListener = new UpdateListener();
         benefitSpinner.addChangeListener(updateListener);
         benefitTextField.getDocument().addDocumentListener(updateListener);
 
-        acceptButton.addActionListener(e -> tryAddItem());
-        cancelButton.addActionListener(e -> dispose());
+        acceptButton.addActionListener(e -> tryAddOrUpdateItem());
+        acceptButton.setEnabled(false);
 
         updateTitle();
         updateCharsPreview();
-        acceptButton.setEnabled(false);
     }
 
-    private void updateTitle() {
-        String modo = isEditionMode ? "Editar" : "Nueva";
-        setTitle(modo + " Prestación Médica - Restan " + currentRemainingChars + " / " + initialRemainingChars + " caracteres");
+    /**
+     * Precarga valores para modo edición
+     */
+    public void setInitialValues(int quantity, String code) {
+        isEditionMode = true;
+        benefitSpinner.setValue(Math.max(1, Math.min(MAX_QTY_PER_TYPE, quantity)));
+        benefitTextField.setText(code != null ? code.trim() : "");
+
+        // Calcular longitud del ítem actual para restar al validar espacio
+        String preview = quantity + "^*" + code + "*" + quantity + "**";
+        editingItemLength = preview.length();
+
+        validateForm();
+        updateTitle();
+        updateCharsPreview();
     }
 
-    private void tryAddItem() {
+    private void tryAddOrUpdateItem() {
         String code = benefitTextField.getText().trim();
         int qty = (Integer) benefitSpinner.getValue();
 
@@ -88,29 +98,30 @@ public class MedicalBenefitEditorDialog extends JDialog {
         }
 
         MedicalBenefitItem item = MedicalBenefitItem.of(qty, code);
-        String itemValue = item.getValue();
-        int itemLength = itemValue.length();
+        int itemLength = item.getValue().length();
 
-        if (itemLength > currentRemainingChars) {
+        // En modo edición: el espacio disponible es mayor porque estamos reemplazando
+        int effectiveAvailable = currentRemainingChars + (isEditionMode ? editingItemLength : 0);
+
+        if (itemLength > effectiveAvailable) {
             JOptionPane.showMessageDialog(this,
                     "<html><b>¡Límite excedido!</b><br>Este ítem usaría " + itemLength +
-                            " caracteres, pero solo restan " + currentRemainingChars + ".</html>",
+                            " caracteres, pero solo restan " + effectiveAvailable + ".</html>",
                     "Espacio insuficiente", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Notificamos al callback
+        // Notificar al callback
         onItemAdded.accept(item);
 
-        // Actualizamos restantes
-        currentRemainingChars -= itemLength;
+        // Actualizar restantes (en edición se ajusta correctamente porque el llamador recalcula)
+        currentRemainingChars = effectiveAvailable - itemLength;
 
-        // Limpieza
+        // Limpieza y feedback
         benefitSpinner.setValue(1);
         benefitTextField.setText("");
         benefitTextField.requestFocusInWindow();
 
-        // Feedback mejorado
         String accion = isEditionMode ? "actualizada" : "agregada";
         JOptionPane.showMessageDialog(this,
                 "<html><b>Prestación médica " + accion + " correctamente</b><br><br>" +
@@ -120,9 +131,19 @@ public class MedicalBenefitEditorDialog extends JDialog {
                         "Restan: <b>" + currentRemainingChars + "</b> caracteres</html>",
                 "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
+        // Resetear modo edición (por si se reutiliza el diálogo)
+        isEditionMode = false;
+        editingItemLength = 0;
+
         updateTitle();
         updateCharsPreview();
         validateForm();
+    }
+
+    private void updateTitle() {
+        String modo = isEditionMode ? "Editar" : "Nueva";
+        setTitle(modo + " Prestación Médica – Restan " + currentRemainingChars +
+                " / " + initialRemainingChars + " caracteres");
     }
 
     private void updateCharsPreview() {
@@ -133,40 +154,41 @@ public class MedicalBenefitEditorDialog extends JDialog {
         StringBuilder msg = new StringBuilder();
 
         if (code.isEmpty()) {
-            msg.append("<b>Ingrese código de prestación</b> (6 dígitos numéricos)");
+            msg.append("<b>Ingrese código de prestación</b> (exactamente 6 dígitos)");
         } else if (!code.matches(CODE_REGEX)) {
-            msg.append("<b>Código inválido</b> → debe ser exactamente 6 dígitos");
+            msg.append("<b>Código inválido</b> – debe ser 6 dígitos numéricos");
         } else {
             msg.append("Este ítem usaría: <b>").append(itemLen).append("</b> caracteres");
-            if (itemLen > 0) {
-                msg.append("<br>Formato HL7: <code>").append(qty).append("^*").append(code)
-                        .append("*").append(qty).append("**</code>");
-            }
+            msg.append("<br>Formato HL7: <code>").append(qty).append("^*").append(code)
+                    .append("*").append(qty).append("**</code>");
         }
 
         charsPreviewLabel.setText("<html>" + msg + "</html>");
 
         if (itemLen > currentRemainingChars) {
             charsPreviewLabel.setForeground(Color.RED);
-        } else if (itemLen > currentRemainingChars * 0.8) {
+        } else if (itemLen > currentRemainingChars * 0.75) {
             charsPreviewLabel.setForeground(new Color(200, 100, 0)); // naranja
         } else if (code.matches(CODE_REGEX)) {
-            charsPreviewLabel.setForeground(new Color(0, 120, 0)); // verde
+            charsPreviewLabel.setForeground(new Color(0, 140, 0)); // verde
         } else {
-            charsPreviewLabel.setForeground(new Color(100, 100, 100)); // gris
+            charsPreviewLabel.setForeground(Color.GRAY);
         }
     }
 
     private void validateForm() {
         String code = benefitTextField.getText().trim();
-        int qty = (Integer) benefitSpinner.getValue();
+        benefitSpinner.getValue();
 
-        String preview = qty + "^*" + code + "*" + qty + "**";
-        int itemLength = preview.length();
+        boolean codeValid;
+        codeValid = code.matches(CODE_REGEX);
+        int itemLen = calculateItemLength();
 
-        boolean valid = code.matches(CODE_REGEX) && itemLength <= currentRemainingChars;
+        // En edición: considerar el espacio que libera el ítem actual
+        int effectiveAvailable = currentRemainingChars + (isEditionMode ? editingItemLength : 0);
+        boolean lengthValid = itemLen <= effectiveAvailable;
 
-        acceptButton.setEnabled(valid);
+        acceptButton.setEnabled(codeValid && lengthValid);
         updateCharsPreview();
     }
 
@@ -178,28 +200,10 @@ public class MedicalBenefitEditorDialog extends JDialog {
     }
 
     private class UpdateListener implements ChangeListener, DocumentListener {
-        @Override public void stateChanged(ChangeEvent e) { update(); }
-        @Override public void insertUpdate(DocumentEvent e) { update(); }
-        @Override public void removeUpdate(DocumentEvent e) { update(); }
-        @Override public void changedUpdate(DocumentEvent e) { update(); }
-
-        private void update() {
-            validateForm();
-            updateTitle();
-        }
-    }
-
-    /**
-     * Precarga valores para modo edición
-     */
-    public void setInitialValues(int quantity, String code) {
-        this.isEditionMode = true;
-        benefitSpinner.setValue(Math.max(1, Math.min(MAX_QTY_PER_TYPE, quantity)));
-        benefitTextField.setText(code != null ? code.trim() : "");
-
-        validateForm();
-        updateTitle();
-        updateCharsPreview();
+        @Override public void stateChanged(ChangeEvent e) { validateForm(); }
+        @Override public void insertUpdate(DocumentEvent e) { validateForm(); }
+        @Override public void removeUpdate(DocumentEvent e) { validateForm(); }
+        @Override public void changedUpdate(DocumentEvent e) { validateForm(); }
     }
 
     private void installCloseBehavior() {
