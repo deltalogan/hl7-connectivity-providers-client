@@ -7,6 +7,7 @@ import com.hl7client.model.dental.DentalBenefit;
 import com.hl7client.model.dental.DentalSurface;
 import com.hl7client.model.enums.TipoMensaje;
 import com.hl7client.ui.model.BenefitTableModel;
+import com.hl7client.ui.util.DialogUtils;
 import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
@@ -47,6 +48,7 @@ public class BenefitDialog extends JDialog {
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
 
         setLocationRelativeTo(null);
+        installCloseBehavior();
     }
 
     private void initLogic() {
@@ -361,6 +363,12 @@ public class BenefitDialog extends JDialog {
             // Si canceló, devolvemos los valores originales para no "contaminar" la lista del llamador
             return List.copyOf(initialBenefits);
         }
+    }
+
+    private void installCloseBehavior() {
+        Action cancelAction = DialogUtils.createDisposeAction(this);
+        cancelButton.setAction(cancelAction);
+        DialogUtils.installCloseAction(this, cancelAction);
     }
 
     private void initComponents() {

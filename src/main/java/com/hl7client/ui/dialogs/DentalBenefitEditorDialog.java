@@ -3,6 +3,7 @@ package com.hl7client.ui.dialogs;
 import javax.swing.border.*;
 import com.hl7client.model.Hl7Constants;
 import com.hl7client.model.dental.*;
+import com.hl7client.ui.util.DialogUtils;
 import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
@@ -55,6 +56,7 @@ public class DentalBenefitEditorDialog extends JDialog {
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
 
         setLocationRelativeTo(null);
+        installCloseBehavior();
     }
 
     /**
@@ -424,6 +426,12 @@ public class DentalBenefitEditorDialog extends JDialog {
         @Override public void insertUpdate(DocumentEvent e) { action.run(); }
         @Override public void removeUpdate(DocumentEvent e) { action.run(); }
         @Override public void changedUpdate(DocumentEvent e) { action.run(); }
+    }
+
+    private void installCloseBehavior() {
+        Action cancelAction = DialogUtils.createDisposeAction(this);
+        cancelButton.setAction(cancelAction);
+        DialogUtils.installCloseAction(this, cancelAction);
     }
 
     private void initComponents() {

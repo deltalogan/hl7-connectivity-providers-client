@@ -2,6 +2,7 @@ package com.hl7client.ui.dialogs;
 
 import com.hl7client.model.benefit.BenefitItem;
 import com.hl7client.model.benefit.MedicalBenefitItem;
+import com.hl7client.ui.util.DialogUtils;
 import com.hl7client.ui.util.WindowSizer;
 
 import javax.swing.*;
@@ -51,6 +52,7 @@ public class MedicalBenefitEditorDialog extends JDialog {
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
 
         setLocationRelativeTo(null);
+        installCloseBehavior();
     }
 
     private void initLogic() {
@@ -198,6 +200,12 @@ public class MedicalBenefitEditorDialog extends JDialog {
         validateForm();
         updateTitle();
         updateCharsPreview();
+    }
+
+    private void installCloseBehavior() {
+        Action cancelAction = DialogUtils.createDisposeAction(this);
+        cancelButton.setAction(cancelAction);
+        DialogUtils.installCloseAction(this, cancelAction);
     }
 
     private void initComponents() {
