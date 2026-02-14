@@ -179,31 +179,26 @@ new FormModel {
 				"gridy": 5
 			} )
 			add( new FormComponent( "javax.swing.JLabel" ) {
-				name: "param1Label"
-				"text": "param1:"
+				name: "viewEditBenefitsLabel"
+				"text": "View / Edit Benefits:"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 6
 				"hAlign": 4
 			} )
-			add( new FormComponent( "javax.swing.JTextField" ) {
-				name: "param1TextField"
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "viewEditBenefitsButton"
+				"text": "View / Edit Benefits"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridy": 6
 				"gridx": 1
+				"gridy": 6
+				"hAlign": 2
 			} )
 			add( new FormComponent( "javax.swing.JLabel" ) {
-				name: "param2Label"
-				"text": "param2:"
+				name: "benefitsSummaryLabel"
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 6
-				"hAlign": 4
 				"gridx": 2
-			} )
-			add( new FormComponent( "javax.swing.JTextField" ) {
-				name: "param2TextField"
-			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
-				"gridy": 6
-				"gridx": 3
+				"gridwidth": 2
 			} )
 			add( new FormComponent( "javax.swing.JButton" ) {
 				name: "acceptButton"

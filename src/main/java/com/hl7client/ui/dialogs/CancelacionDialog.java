@@ -3,8 +3,11 @@ package com.hl7client.ui.dialogs;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.hl7client.controller.Hl7Controller;
+import com.hl7client.model.benefit.BenefitItem;
+import com.hl7client.model.benefit.BenefitRequestMapper;
 import com.hl7client.model.dto.request.hl7.CancelacionRequest;
 import com.hl7client.model.dto.request.hl7.Manual;
+import com.hl7client.model.dto.request.hl7.RegistracionRequest;
 import com.hl7client.model.dto.response.hl7.CancelacionCabecera;
 import com.hl7client.model.dto.response.hl7.CancelacionResponse;
 import com.hl7client.model.result.Hl7Result;
@@ -18,8 +21,14 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
+/**
+ * Diálogo para cancelación de prestaciones HL7.
+ * Permite gestionar prestaciones a cancelar y genera automáticamente param1/param2.
+ */
 public class CancelacionDialog extends JDialog {
 
     private final Hl7Controller hl7Controller;
@@ -27,20 +36,15 @@ public class CancelacionDialog extends JDialog {
     private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.75;
     private static final String SPLASH_PATH = "/icons/splash.gif";
+    private static final DateTimeFormatter HL7_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
 
-    private static final DateTimeFormatter HL7_DATE_FORMAT =
-            DateTimeFormatter.BASIC_ISO_DATE;
-
-    // =========================
     // DatePicker
-    // =========================
     private DatePicker altaDatePicker;
 
-    public CancelacionDialog(
-            Window owner,
-            Hl7Controller hl7Controller,
-            String titulo
-    ) {
+    // Lista de prestaciones a cancelar
+    private final List<BenefitItem> benefits = new ArrayList<>();
+
+    public CancelacionDialog(Window owner, Hl7Controller hl7Controller, String titulo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.hl7Controller = Objects.requireNonNull(hl7Controller);
         setTitle(Objects.requireNonNullElse(titulo, "Cancelación"));
@@ -50,28 +54,46 @@ public class CancelacionDialog extends JDialog {
         initActions();
         initShortcuts();
         installCloseBehavior();
+        initBenefitsAction();
 
         pack();
-
-        // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
-
-        // Aplicamos tamaño inicial deseado
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
-
         setLocationRelativeTo(null);
 
-        // Valores FIJOS obligatorios - se asignan después de initComponents()
+        // Valores FIJOS
         modoTextField.setText("N");
         modoTextField.setEnabled(false);
-
         tipoTextField.setText("90");
         tipoTextField.setEnabled(false);
 
-        // Foco inicial (modo está deshabilitado, pasamos al siguiente campo editable)
-        SwingUtilities.invokeLater(() ->
-                credenTextField.requestFocusInWindow()
-        );
+        // Foco inicial
+        SwingUtilities.invokeLater(() -> credenTextField.requestFocusInWindow());
+
+        // Inicializar resumen
+        updateBenefitsSummary();
+    }
+
+    // =========================================================
+    // Inicialización del botón de beneficios
+    // =========================================================
+    private void initBenefitsAction() {
+        viewEditBenefitsButton.addActionListener(e -> {
+            BenefitDialog benefitDialog = new BenefitDialog(
+                    this,
+                    null,           // No forzamos tipo aquí
+                    new ArrayList<>(benefits),
+                    true            // modo cancelación
+            );
+
+            benefitDialog.setVisible(true);
+
+            if (benefitDialog.isConfirmed()) {
+                benefits.clear();
+                benefits.addAll(benefitDialog.getBenefits());
+                updateBenefitsSummary();
+            }
+        });
     }
 
     // =========================================================
@@ -81,11 +103,35 @@ public class CancelacionDialog extends JDialog {
         DatePickerSettings settings = new DatePickerSettings();
         settings.setFormatForDatesCommonEra("yyyyMMdd");
         settings.setAllowKeyboardEditing(false);
-
         altaDatePicker = new DatePicker(settings);
-
         altaPanel.setLayout(new BorderLayout());
         altaPanel.add(altaDatePicker, BorderLayout.CENTER);
+    }
+
+    // =========================================================
+    // Resumen de prestaciones (similar a RegistracionDialog)
+    // =========================================================
+    private void updateBenefitsSummary() {
+        if (benefits.isEmpty()) {
+            benefitsSummaryLabel.setText("<html><i>Ninguna prestación seleccionada para cancelar</i></html>");
+            benefitsSummaryLabel.setForeground(Color.GRAY);
+            benefitsSummaryLabel.setToolTipText("Haga clic en 'View / Edit Benefits' para seleccionar prestaciones");
+            acceptButton.setEnabled(true);
+            acceptButton.setToolTipText(null);
+            return;
+        }
+
+        int count = benefits.size();
+        String text = String.format(
+                "<html><b>%d prestación%s</b> seleccionada%s para cancelar</html>",
+                count, (count == 1 ? "" : "es"), (count == 1 ? "" : "s")
+        );
+
+        benefitsSummaryLabel.setText(text);
+        benefitsSummaryLabel.setForeground(new Color(0, 100, 200)); // azul similar al de Registracion
+        benefitsSummaryLabel.setToolTipText("Prestaciones listas para cancelación");
+        acceptButton.setEnabled(true);
+        acceptButton.setToolTipText(null);
     }
 
     // =========================================================
@@ -99,10 +145,7 @@ public class CancelacionDialog extends JDialog {
                 this::doCancelacion,
                 this::onCancelacionResult
         );
-
         acceptButton.setAction(acceptAction);
-
-        // ENTER → Accept
         getRootPane().setDefaultButton(acceptButton);
     }
 
@@ -120,12 +163,10 @@ public class CancelacionDialog extends JDialog {
 
     private void onCancelacionResult(Hl7Result<CancelacionResponse> result) {
         if (result == null) {
-            JOptionPane.showMessageDialog(
-                    this,
+            JOptionPane.showMessageDialog(this,
                     "Error técnico inesperado",
                     getTitle(),
-                    JOptionPane.ERROR_MESSAGE
-            );
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -135,12 +176,7 @@ public class CancelacionDialog extends JDialog {
                 .map(String::valueOf)
                 .orElse(null);
 
-        Hl7UiErrorHandler.mostrarResultado(
-                this,
-                result,
-                getTitle(),
-                transac
-        );
+        Hl7UiErrorHandler.mostrarResultado(this, result, getTitle(), transac);
 
         if (result.isOk()) {
             result.getData().ifPresent(this::mostrarResultado);
@@ -154,9 +190,8 @@ public class CancelacionDialog extends JDialog {
     private CancelacionRequest buildRequest() {
         CancelacionRequest request = new CancelacionRequest();
 
-        // Valores FIJOS (leídos de campos deshabilitados)
-        request.setModo(textValue(modoTextField));  // "N"
-        request.setTipo(intValue(tipoTextField));   // 90
+        request.setModo(textValue(modoTextField));      // "N"
+        request.setTipo(intValue(tipoTextField));       // 90
 
         request.setCreden(longValue(credenTextField));
         request.setAlta(toHl7(altaDatePicker.getDate()));
@@ -165,7 +200,7 @@ public class CancelacionDialog extends JDialog {
         request.setTicketExt(
                 ticketExtTextField.getText().isBlank()
                         ? 0
-                        : intValue(ticketExtTextField)
+                        : Integer.parseInt(ticketExtTextField.getText())
         );
 
         request.setCancelCab(intValue(cancelCabTextField));
@@ -174,13 +209,20 @@ public class CancelacionDialog extends JDialog {
         request.setCuit(longValue(cuitTextField));
         request.setErrorExt(intValue(errorExtTextField));
 
-        request.setParam1(
-                param1TextField.getText().isBlank()
-                        ? "0"
-                        : textValue(param1TextField)
-        );
+        // Generación automática de param1 y param2
+        if (benefits.isEmpty()) {
+            request.setParam1("0");           // ← valor explícito cuando no hay prestaciones
+            request.setParam2("");
+        } else {
+            RegistracionRequest temp = new RegistracionRequest();
+            BenefitRequestMapper.apply(temp, benefits);
 
-        request.setParam2(textValue(param2TextField));
+            String p1 = temp.getParam1();
+            String p2 = temp.getParam2();
+
+            request.setParam1(p1 != null && !p1.isBlank() ? p1 : "0");
+            request.setParam2(p2 != null ? p2 : "");
+        }
 
         return request;
     }
@@ -207,17 +249,12 @@ public class CancelacionDialog extends JDialog {
     }
 
     private Manual manualValue(JTextField field) {
-        if (field.getText().isBlank()) {
-            return null;
-        }
-
+        if (field.getText().isBlank()) return null;
         return switch (field.getText().trim().toUpperCase()) {
             case "0" -> Manual.MANUAL;
             case "C" -> Manual.CAPITADOR;
             case "L" -> Manual.COMSULTA;
-            default -> throw new IllegalArgumentException(
-                    "Valor inválido para Manual: " + field.getText()
-            );
+            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + field.getText());
         };
     }
 
@@ -226,26 +263,16 @@ public class CancelacionDialog extends JDialog {
     // =========================================================
     private void mostrarResultado(CancelacionResponse response) {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("Resultado: ")
-                .append(response.getCabecera().getRechaCabeDeno())
-                .append("\n");
+        sb.append("Resultado: ").append(response.getCabecera().getRechaCabeDeno()).append("\n");
 
         if (response.getDetalle() != null && response.getDetalle().length > 0) {
             sb.append("\nDetalle:\n");
             for (var det : response.getDetalle()) {
-                sb.append("- ")
-                        .append(det.getDenoItem())
-                        .append("\n");
+                sb.append("- ").append(det.getDenoItem()).append("\n");
             }
         }
 
-        JOptionPane.showMessageDialog(
-                this,
-                sb.toString(),
-                getTitle(),
-                JOptionPane.INFORMATION_MESSAGE
-        );
+        JOptionPane.showMessageDialog(this, sb.toString(), getTitle(), JOptionPane.INFORMATION_MESSAGE);
     }
 
     // =========================================================
@@ -284,10 +311,9 @@ public class CancelacionDialog extends JDialog {
         cancelModoTextField = new JTextField();
         errorExtLabel = new JLabel();
         errorExtTextField = new JTextField();
-        param1Label = new JLabel();
-        param1TextField = new JTextField();
-        param2Label = new JLabel();
-        param2TextField = new JTextField();
+        viewEditBenefitsLabel = new JLabel();
+        viewEditBenefitsButton = new JButton();
+        benefitsSummaryLabel = new JLabel();
         acceptButton = new JButton();
         cancelButton = new JButton();
 
@@ -416,21 +442,18 @@ public class CancelacionDialog extends JDialog {
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
-        //---- param1Label ----
-        param1Label.setText("param1:");
-        contentPane.add(param1Label, new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0,
+        //---- viewEditBenefitsLabel ----
+        viewEditBenefitsLabel.setText("View / Edit Benefits:");
+        contentPane.add(viewEditBenefitsLabel, new GridBagConstraints(0, 6, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
-            new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(param1TextField, new GridBagConstraints(1, 6, 1, 1, 0.0, 0.0,
-            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 5), 0, 0));
 
-        //---- param2Label ----
-        param2Label.setText("param2:");
-        contentPane.add(param2Label, new GridBagConstraints(2, 6, 1, 1, 0.0, 0.0,
-            GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
+        //---- viewEditBenefitsButton ----
+        viewEditBenefitsButton.setText("View / Edit Benefits");
+        contentPane.add(viewEditBenefitsButton, new GridBagConstraints(1, 6, 1, 1, 0.0, 0.0,
+            GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
-        contentPane.add(param2TextField, new GridBagConstraints(3, 6, 1, 1, 0.0, 0.0,
+        contentPane.add(benefitsSummaryLabel, new GridBagConstraints(2, 6, 2, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
 
@@ -476,10 +499,9 @@ public class CancelacionDialog extends JDialog {
     private JTextField cancelModoTextField;
     private JLabel errorExtLabel;
     private JTextField errorExtTextField;
-    private JLabel param1Label;
-    private JTextField param1TextField;
-    private JLabel param2Label;
-    private JTextField param2TextField;
+    private JLabel viewEditBenefitsLabel;
+    private JButton viewEditBenefitsButton;
+    private JLabel benefitsSummaryLabel;
     private JButton acceptButton;
     private JButton cancelButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables  @formatter:on

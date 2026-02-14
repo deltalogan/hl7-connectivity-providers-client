@@ -14,26 +14,34 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
  * Diálogo central para gestionar (ABM) las prestaciones médicas y odontológicas.
  * Permite insertar, editar, eliminar y confirmar la lista de beneficios.
+ * Soporta modo cancelación (prestaciones solo con códigos, cantidad fija = 1 en medicina).
  */
 public class BenefitDialog extends JDialog {
 
     private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.55; // un poco más alto para mejor visibilidad
 
+    private static final int MAX_LENGTH_CANCEL_MEDICINA = 255 * 2; // 510 para param1 + param2
+
     private final TipoMensaje tipoMensaje;
     private final List<BenefitItem> initialBenefits;
+    private final boolean isCancelMode;
+
     private BenefitTableModel tableModel;
     private boolean confirmed = false;
 
-    public BenefitDialog(Window owner, TipoMensaje tipoMensaje, List<BenefitItem> initialBenefits) {
+    public BenefitDialog(Window owner, TipoMensaje tipoMensaje, List<BenefitItem> initialBenefits, boolean isCancelMode) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.tipoMensaje = tipoMensaje != null ? tipoMensaje : TipoMensaje.MEDICINA;
         this.initialBenefits = List.copyOf(initialBenefits);
+        this.isCancelMode = isCancelMode;
+
         initComponents();
         initLogic();
         pack();
@@ -41,6 +49,11 @@ public class BenefitDialog extends JDialog {
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
         setLocationRelativeTo(null);
         installCloseBehavior();
+    }
+
+    // Sobrecarga para mantener compatibilidad con código existente
+    public BenefitDialog(Window owner, TipoMensaje tipoMensaje, List<BenefitItem> initialBenefits) {
+        this(owner, tipoMensaje, initialBenefits, false);
     }
 
     private void initLogic() {
@@ -66,7 +79,7 @@ public class BenefitDialog extends JDialog {
         }});
 
         benefitTable.getColumnModel().getColumn(2).setPreferredWidth(500);  // Contenido
-        benefitTable.getColumnModel().getColumn(3).setPreferredWidth(120);  // Tipo (si existe)
+        benefitTable.getColumnModel().getColumn(3).setPreferredWidth(120);  // Tipo
 
         // Renderer con tooltips en columna Contenido
         benefitTable.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
@@ -155,22 +168,32 @@ public class BenefitDialog extends JDialog {
 
     private void openMedicalEditor(BenefitItem editing) {
         int remaining = tableModel.getRemainingChars(editing);
-        MedicalBenefitEditorDialog dialog = new MedicalBenefitEditorDialog(
-                this, remaining,
-                added -> {
-                    if (editing == null) {
-                        tableModel.add(added);
-                    } else {
-                        int idx = tableModel.getAll().indexOf(editing);
-                        if (idx >= 0) tableModel.replace(idx, added);
-                    }
-                    refreshState();
-                });
+
+        JDialog editorDialog;
+        Consumer<BenefitItem> callback = added -> {
+            if (editing == null) {
+                tableModel.add(added);
+            } else {
+                int idx = tableModel.getAll().indexOf(editing);
+                if (idx >= 0) tableModel.replace(idx, added);
+            }
+            refreshState();
+        };
+
+        if (isCancelMode) {
+            editorDialog = new CancelMedicalBenefitEditorDialog(this, remaining, callback);
+        } else {
+            editorDialog = new MedicalBenefitEditorDialog(this, remaining, callback);
+        }
 
         if (editing instanceof MedicalBenefitItem mbi) {
-            dialog.setInitialValues(mbi.getQuantityPerType(), mbi.getBenefitCode());
+            if (editorDialog instanceof MedicalBenefitEditorDialog normalEditor) {
+                normalEditor.setInitialValues(mbi.getQuantityPerType(), mbi.getBenefitCode());
+            }
+            // En modo cancelación no seteamos valores iniciales de cantidad (siempre 1)
         }
-        dialog.setVisible(true);
+
+        editorDialog.setVisible(true);
     }
 
     private void openDentalEditor(DentalBenefit editing) {
@@ -185,12 +208,6 @@ public class BenefitDialog extends JDialog {
             }
             refreshState();
 
-            if ((dentalResult.getPiece() != null)) {
-                dentalResult.getPiece().getFdiCode();
-            }
-            dentalResult.getSurfaces().stream()
-                    .map(DentalSurface::name)
-                    .collect(Collectors.joining(", "));
             String accion = editing != null ? "actualizada" : "agregada";
             String piezaDesc = (dentalResult.getPiece() != null)
                     ? dentalResult.getPiece().getFdiCode()
@@ -221,9 +238,7 @@ public class BenefitDialog extends JDialog {
 
     private void onFinalAccept() {
         int total = tableModel.getTotalChars();
-        int max = (tipoMensaje == TipoMensaje.ODONTOLOGIA)
-                ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
-                : Hl7Constants.MAX_LENGTH_MEDICINA;
+        int max = getMaxLength();
 
         if (total > max) {
             JOptionPane.showMessageDialog(this,
@@ -244,6 +259,15 @@ public class BenefitDialog extends JDialog {
         dispose();
     }
 
+    private int getMaxLength() {
+        if (isCancelMode && tipoMensaje != TipoMensaje.ODONTOLOGIA) {
+            return MAX_LENGTH_CANCEL_MEDICINA; // 510
+        }
+        return (tipoMensaje == TipoMensaje.ODONTOLOGIA)
+                ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
+                : Hl7Constants.MAX_LENGTH_MEDICINA;
+    }
+
     private void refreshState() {
         boolean hasSelection = benefitTable.getSelectedRow() >= 0;
 
@@ -257,40 +281,44 @@ public class BenefitDialog extends JDialog {
 
         // Estado de caracteres
         int used = tableModel.getTotalChars();
-        int max = (tipoMensaje == TipoMensaje.ODONTOLOGIA)
-                ? Hl7Constants.MAX_LENGTH_ODONTOLOGIA
-                : Hl7Constants.MAX_LENGTH_MEDICINA;
+        int max = getMaxLength();  // ← límite correcto según modo
         int remaining = max - used;
         int count = tableModel.getRowCount();
 
         String tipoDesc = (tipoMensaje == TipoMensaje.ODONTOLOGIA) ? "Odontología" : "Medicina";
+        String modePrefix = isCancelMode ? "Cancelación – " : "";
         String countText = count + " " + (count == 1 ? "prestación" : "prestaciones");
 
-        // Título dinámico con restantes
+        // Título dinámico con límite real
         String title = String.format(
-                "Gestión de Prestaciones - %s • %s • %d / %d chars (restan %d)",
-                tipoDesc, countText, used, max, remaining
+                "Gestión de Prestaciones - %s%s • %s • %d / %d chars (restan %d)",
+                modePrefix, tipoDesc, countText, used, max, remaining
         );
 
         Color bgColor = UIManager.getColor("Panel.background");
 
+        // Solo alertas cambian el fondo (respeta Dark Mode)
         if (remaining < 0) {
             title += " → ¡Excedido!";
-            bgColor = new Color(255, 220, 220); // rojo claro
+            bgColor = new Color(255, 220, 220);
         } else if (remaining < 50) {
             title += " → ¡Muy poco!";
-            bgColor = new Color(255, 235, 180); // naranja claro
+            bgColor = new Color(255, 235, 180);
         } else if (remaining < 150) {
             title += " → Cerca del límite";
-            bgColor = new Color(255, 245, 200); // ámbar suave
-        } else if (remaining < 300) {
-            title += " → Espacio moderado";
+            bgColor = new Color(255, 245, 200);
         }
 
         setTitle(title);
-        getContentPane().setBackground(bgColor);
 
-        // Summary label (mantenemos como respaldo visual)
+        // Aplicamos fondo SOLO en alertas
+        if (remaining < 150) {
+            getContentPane().setBackground(bgColor);
+        } else {
+            getContentPane().setBackground(UIManager.getColor("Panel.background"));
+        }
+
+        // Summary label
         if (summaryLabel != null) {
             String summary = tableModel.isEmpty()
                     ? "No hay prestaciones cargadas aún"
