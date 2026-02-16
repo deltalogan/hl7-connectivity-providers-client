@@ -75,6 +75,7 @@ public class Application {
         handleSessionEnd(SessionEndReason.MANUAL_LOGOUT);
     }
 
+    @SuppressWarnings("unused")
     public void forceLogout(SessionEndReason reason) {
         handleSessionEnd(reason);
     }
