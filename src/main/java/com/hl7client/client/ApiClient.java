@@ -1,33 +1,38 @@
 package com.hl7client.client;
 
 import com.hl7client.config.SessionContext;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ApiClient {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(ApiClient.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ApiClient.class.getName());
 
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
-
-    private final HttpClient client;
+    private final CloseableHttpClient httpClient;
     private final AuthRefresher authRefresher;
 
     public ApiClient(AuthRefresher authRefresher) {
-        this.client = HttpClient.newBuilder()
-                .connectTimeout(CONNECT_TIMEOUT)
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(10_000)      // 10 segundos
+                .setConnectionRequestTimeout(10_000)
+                .setSocketTimeout(30_000)       // 30 segundos
                 .build();
+
+        this.httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build();
+
         this.authRefresher = Objects.requireNonNull(authRefresher);
     }
 
@@ -35,45 +40,42 @@ public class ApiClient {
         return postInternal(url, body, headers, true);
     }
 
-    private ApiResponse postInternal(
-            String url,
-            String body,
-            Map<String, String> headers,
-            boolean allowRetry
-    ) {
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .timeout(REQUEST_TIMEOUT)
-                    .POST(HttpRequest.BodyPublishers.ofString(body));
+    private ApiResponse postInternal(String url, String body, Map<String, String> headers, boolean allowRetry) {
+        HttpPost post = new HttpPost(url);
 
-            buildHeaders(headers).forEach(builder::header);
+        // Headers
+        Map<String, String> finalHeaders = buildHeaders(headers);
+        finalHeaders.forEach(post::addHeader);
 
-            HttpRequest request = builder.build();
+        // Body
+        if (body != null && !body.trim().isEmpty()) {
+            try {
+                post.setEntity(new StringEntity(body, StandardCharsets.UTF_8));
+            } catch (Exception e) {
+                throw new RuntimeException("Error preparando body", e);
+            }
+        }
 
-            // 🔍 Logs de debugging
-            logRequest(request, body);
-            logAsCurl(request, body);
+        // Logging
+        logRequest(post, body);
+        logAsCurl(post, body);
 
-            HttpResponse<String> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
+        try (CloseableHttpResponse response = httpClient.execute(post)) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
-            logResponse(response);
+            logResponse(statusCode, responseBody);
 
-            // 🔐 Refresh automático
-            if (response.statusCode() == 401 && allowRetry && canRefresh(url)) {
+            // Refresh automático si 401
+            if (statusCode == 401 && allowRetry && canRefresh(url)) {
                 LOGGER.info("401 received, attempting auth refresh");
                 authRefresher.refreshAuth();
                 return postInternal(url, body, headers, false);
             }
 
-            return new ApiResponse(
-                    response.statusCode(),
-                    response.body(),
-                    Map.of()
-            );
+            return new ApiResponse(statusCode, responseBody, Collections.emptyMap());
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Transport error calling API", e);
             throw new RuntimeException("Error de comunicación con el servicio", e);
         }
@@ -81,47 +83,31 @@ public class ApiClient {
 
     // ================== Logging ==================
 
-    private void logRequest(HttpRequest request, String body) {
+    private void logRequest(HttpPost post, String body) {
         System.out.println("=== REQUEST ===");
-        System.out.println("URL: " + request.uri());
-        System.out.println("Method: " + request.method());
-        System.out.println("Headers: " + request.headers().map());
+        System.out.println("URL: " + post.getURI());
+        System.out.println("Method: POST");
+        System.out.println("Headers: " + Arrays.toString(post.getAllHeaders()));
         System.out.println("Body: " + body);
         System.out.println("==============");
     }
 
-    private void logResponse(HttpResponse<String> response) {
+    private void logResponse(int status, String body) {
         System.out.println("=== RESPONSE ===");
-        System.out.println("Status: " + response.statusCode());
-        System.out.println("Body: " + response.body());
+        System.out.println("Status: " + status);
+        System.out.println("Body: " + body);
         System.out.println("==============");
     }
 
-    /**
-     * Log del request en formato CURL
-     * Ideal para copiar/pegar en Insomnia o terminal
-     */
-    private void logAsCurl(HttpRequest request, String body) {
-        StringBuilder curl = new StringBuilder("curl -X ")
-                .append(request.method())
-                .append(" '")
-                .append(request.uri())
-                .append("'");
+    private void logAsCurl(HttpPost post, String body) {
+        StringBuilder curl = new StringBuilder("curl -X POST '").append(post.getURI()).append("'");
 
-        request.headers().map().forEach((key, values) -> {
-            for (String value : values) {
-                curl.append(" \\\n  -H '")
-                        .append(key)
-                        .append(": ")
-                        .append(value)
-                        .append("'");
-            }
-        });
+        for (org.apache.http.Header h : post.getAllHeaders()) {
+            curl.append(" \\\n  -H '").append(h.getName()).append(": ").append(h.getValue()).append("'");
+        }
 
-        if (body != null && !body.isBlank()) {
-            curl.append(" \\\n  --data '")
-                    .append(body.replace("'", "'\\''"))
-                    .append("'");
+        if (body != null && !body.trim().isEmpty()) {
+            curl.append(" \\\n  --data '").append(body.replace("'", "'\\''")).append("'");
         }
 
         System.out.println("=== CURL ===");
@@ -129,8 +115,7 @@ public class ApiClient {
         System.out.println("============");
     }
 
-    // ================== Helpers ==================
-
+    // Helpers (mismos que antes)
     private boolean canRefresh(String url) {
         return SessionContext.isAuthenticated()
                 && !url.contains("auth-login")
@@ -146,14 +131,15 @@ public class ApiClient {
             finalHeaders.putAll(headers);
         }
 
-        if (SessionContext.isAuthenticated()
-                && !finalHeaders.containsKey("Authorization")) {
-            finalHeaders.put(
-                    "Authorization",
-                    "Bearer " + SessionContext.getToken()
-            );
+        if (SessionContext.isAuthenticated() && !finalHeaders.containsKey("Authorization")) {
+            finalHeaders.put("Authorization", "Bearer " + SessionContext.getToken());
         }
 
         return finalHeaders;
+    }
+
+    // Opcional: cerrar el cliente al destruir (buena práctica)
+    public void close() throws IOException {
+        httpClient.close();
     }
 }

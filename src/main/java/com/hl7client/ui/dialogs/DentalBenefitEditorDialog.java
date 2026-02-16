@@ -152,7 +152,22 @@ public class DentalBenefitEditorDialog extends JDialog {
         incisalCheckBox.addActionListener(surfaceListener);
         palatalCheckBox.addActionListener(surfaceListener);
 
-        benefitTextField.getDocument().addDocumentListener(new SimpleDocumentListener(this::updatePreview));
+        benefitTextField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updatePreview();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updatePreview();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updatePreview();
+            }
+        });
 
         acceptButton.addActionListener(e -> onAccept());
         updatePreview();
@@ -368,17 +383,28 @@ public class DentalBenefitEditorDialog extends JDialog {
         if (selected.isEmpty()) return "";
 
         List<DentalSurface> ordered = new ArrayList<>(selected);
-        ordered.sort(Comparator.comparingInt(s -> switch (s) {
-            case VESTIBULAR -> 0;
-            case OCCLUSAL   -> 1;
-            case DISTAL     -> 2;
-            case MESIAL     -> 3;
-            case LINGUAL    -> 4;
-            case INCISAL    -> 5;
-            case PALATAL    -> 6;
-        }));
 
-        return ordered.stream().map(DentalSurface::getCode).collect(Collectors.joining());
+        // ← Cambio clave: usamos el método helper
+        ordered.sort(Comparator.comparingInt(this::getSurfacePriority));
+
+        return ordered.stream()
+                .map(DentalSurface::getCode)
+                .collect(Collectors.joining());
+    }
+
+    private int getSurfacePriority(DentalSurface surface) {
+        switch (surface) {
+            case VESTIBULAR:  return 0;
+            case OCCLUSAL:    return 1;
+            case DISTAL:      return 2;
+            case MESIAL:      return 3;
+            case LINGUAL:     return 4;
+            case INCISAL:     return 5;
+            case PALATAL:     return 6;
+            default:
+                // Fallback defensivo (por si agregan nuevas superficies en el futuro)
+                return 99;
+        }
     }
 
     private String getBenefitCode() {
@@ -397,12 +423,6 @@ public class DentalBenefitEditorDialog extends JDialog {
 
         return String.format("%s^*%s*%s*%s*%s*%s%s",
                 TOTAL_COUNT, pieceStr, surfacesStr, benefitCodeStr, ORIGIN, ITEM_QUANTITY, ASTERISKS);
-    }
-
-    private record SimpleDocumentListener(Runnable action) implements DocumentListener {
-        @Override public void insertUpdate(DocumentEvent e) { action.run(); }
-        @Override public void removeUpdate(DocumentEvent e) { action.run(); }
-        @Override public void changedUpdate(DocumentEvent e) { action.run(); }
     }
 
     private void installCloseBehavior() {
@@ -433,7 +453,7 @@ public class DentalBenefitEditorDialog extends JDialog {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0};

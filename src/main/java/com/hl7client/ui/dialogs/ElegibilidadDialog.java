@@ -43,7 +43,8 @@ public class ElegibilidadDialog extends JDialog {
     ) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.hl7Controller = Objects.requireNonNull(hl7Controller);
-        setTitle(Objects.requireNonNullElse(titulo, "Elegibilidad"));
+        // Opción 1: ternario directo (más corta y común)
+        setTitle(titulo != null ? titulo : "Elegibilidad");
 
         initComponents();
         initDatePickers();
@@ -171,7 +172,7 @@ public class ElegibilidadDialog extends JDialog {
         request.setCuit(textValue(cuitTextField));
         request.setOriMatri(textValue(oriMatriTextField));
         request.setAutoriz(
-                autorizTextField.getText().isBlank()
+                autorizTextField.getText().isEmpty()
                         ? 0
                         : intValue(autorizTextField)
         );
@@ -188,23 +189,28 @@ public class ElegibilidadDialog extends JDialog {
     }
 
     private String textValue(JTextField field) {
-        return field.getText().isBlank() ? null : field.getText().trim();
+        return field.getText().isEmpty() ? null : field.getText().trim();
     }
 
     private Integer intValue(JTextField field) {
         String txt = field.getText().trim();
-        return txt.isBlank() ? null : Integer.parseInt(txt);
+        return txt.isEmpty() ? null : Integer.parseInt(txt);
     }
 
     private Manual manualValue(JTextField field) {
         String txt = field.getText().trim().toUpperCase();
-        if (txt.isBlank()) return null;
-        return switch (txt) {
-            case "0" -> Manual.MANUAL;
-            case "C" -> Manual.CAPITADOR;
-            case "L" -> Manual.COMSULTA;
-            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
-        };
+        if (txt.isEmpty()) return null;
+
+        switch (txt) {
+            case "0":
+                return Manual.MANUAL;
+            case "C":
+                return Manual.CAPITADOR;
+            case "L":
+                return Manual.COMSULTA;
+            default:
+                throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
+        }
     }
 
     // =========================================================
@@ -265,7 +271,7 @@ public class ElegibilidadDialog extends JDialog {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0};

@@ -34,32 +34,35 @@ public class Application {
 
     public void requestClose(ApplicationCloseIntent intent) {
         switch (intent) {
-
-            case EXIT_APPLICATION -> {
-                int option = JOptionPane.showConfirmDialog(
+            case EXIT_APPLICATION:
+                int optionExit = JOptionPane.showConfirmDialog(
                         null,
                         "¿Está seguro que desea cerrar la aplicación?",
                         "Salir",
                         JOptionPane.YES_NO_OPTION
                 );
-                if (option == JOptionPane.YES_OPTION) {
+                if (optionExit == JOptionPane.YES_OPTION) {
                     closeLoginFrame();
                     closeMainFrame();
                     System.exit(0);
                 }
-            }
+                break;
 
-            case LOGOUT_SESSION -> {
-                int option = JOptionPane.showConfirmDialog(
+            case LOGOUT_SESSION:
+                int optionLogout = JOptionPane.showConfirmDialog(
                         null,
                         "¿Está seguro que desea cerrar sesión?",
                         "Cerrar sesión",
                         JOptionPane.YES_NO_OPTION
                 );
-                if (option == JOptionPane.YES_OPTION) {
+                if (optionLogout == JOptionPane.YES_OPTION) {
                     logoutManually();
                 }
-            }
+                break;
+
+            default:
+                System.err.println("Intento de cierre desconocido: " + intent);
+                break;
         }
     }
 
@@ -131,9 +134,21 @@ public class Application {
         closeMainFrame();
 
         switch (reason) {
-            case MANUAL_LOGOUT -> JOptionPane.showMessageDialog(null, "Sesión cerrada correctamente");
-            case SESSION_EXPIRED -> JOptionPane.showMessageDialog(null, "La sesión expiró");
-            case UNAUTHORIZED -> JOptionPane.showMessageDialog(null, "No autorizado");
+            case MANUAL_LOGOUT:
+                JOptionPane.showMessageDialog(null, "Sesión cerrada correctamente");
+                break;
+
+            case SESSION_EXPIRED:
+                JOptionPane.showMessageDialog(null, "La sesión expiró");
+                break;
+
+            case UNAUTHORIZED:
+                JOptionPane.showMessageDialog(null, "No autorizado");
+                break;
+
+            default:
+                JOptionPane.showMessageDialog(null, "Sesión terminada por motivo desconocido");
+                break;
         }
 
         openLogin();

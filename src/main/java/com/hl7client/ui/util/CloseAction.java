@@ -31,7 +31,7 @@ public class CloseAction extends AbstractAction {
         this.application = Objects.requireNonNull(application, "application");
         this.intent = Objects.requireNonNull(intent, "intent");
 
-        if (tooltip != null && !tooltip.isBlank()) {
+        if (tooltip != null && !tooltip.isEmpty()) {
             putValue(Action.SHORT_DESCRIPTION, tooltip);
         }
     }

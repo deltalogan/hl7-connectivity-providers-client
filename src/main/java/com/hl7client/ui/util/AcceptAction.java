@@ -41,7 +41,7 @@ public class AcceptAction<T> extends AbstractAction {
         SplashController splash = new SplashController(owner);
         splash.show(splashResource);
 
-        SwingWorker<Hl7Result<T>, Void> worker = new SwingWorker<>() {
+        SwingWorker<Hl7Result<T>, Void> worker = new SwingWorker<Hl7Result<T>, Void>() {
 
             @Override
             protected Hl7Result<T> doInBackground() {
@@ -65,7 +65,7 @@ public class AcceptAction<T> extends AbstractAction {
                 setEnabled(true);
 
                 try {
-                    onResult.accept(get());
+                    onResult.accept(get());  // ← ahora get() devuelve Hl7Result<T>
                 } catch (Exception ex) {
                     onResult.accept(
                             Hl7Result.error(

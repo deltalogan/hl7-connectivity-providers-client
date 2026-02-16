@@ -6,6 +6,7 @@ import com.hl7client.model.dental.DentalBenefit;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Mapper que transforma una lista de {@link BenefitItem} en los campos param1, param2, param3
@@ -49,8 +50,12 @@ public final class BenefitRequestMapper {
         BenefitType type = determineType(benefits);
 
         switch (type) {
-            case DENTAL -> handleDental(request, benefits);
-            case MEDICAL -> handleMedical(request, benefits);
+            case DENTAL:
+                handleDental(request, benefits);
+                break;
+            case MEDICAL:
+                handleMedical(request, benefits);
+                break;
         }
     }
 
@@ -83,7 +88,7 @@ public final class BenefitRequestMapper {
         DentalBenefit item = (DentalBenefit) benefits.get(0);
         String value = item.getValue();
 
-        if (value == null || value.isBlank()) {
+        if (value == null || value.isEmpty()) {
             request.setParam1(EMPTY_PARAM_VALUE);
         } else {
             if (value.length() > Hl7Constants.MAX_LENGTH_ODONTOLOGIA) {
@@ -102,7 +107,7 @@ public final class BenefitRequestMapper {
         List<MedicalBenefitItem> items = benefits.stream()
                 .filter(b -> b instanceof MedicalBenefitItem)
                 .map(b -> (MedicalBenefitItem) b)
-                .toList();
+                .collect(Collectors.toList());
 
         if (items.isEmpty()) {
             setEmptyParams(request);

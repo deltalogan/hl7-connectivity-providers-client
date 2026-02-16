@@ -18,7 +18,9 @@ public final class BusyCursorManager {
 
         window.setCursor(wait);
 
-        if (window instanceof RootPaneContainer rpc) {
+        // Casteo clásico (Java 8)
+        if (window instanceof RootPaneContainer) {
+            RootPaneContainer rpc = (RootPaneContainer) window;
             JComponent glass = (JComponent) rpc.getGlassPane();
             glass.setCursor(wait);
             glass.setVisible(true);
@@ -30,7 +32,9 @@ public final class BusyCursorManager {
 
         window.setCursor(originalCursor);
 
-        if (window instanceof RootPaneContainer rpc) {
+        // Casteo clásico (Java 8)
+        if (window instanceof RootPaneContainer) {
+            RootPaneContainer rpc = (RootPaneContainer) window;
             JComponent glass = (JComponent) rpc.getGlassPane();
             glass.setVisible(false);
         }

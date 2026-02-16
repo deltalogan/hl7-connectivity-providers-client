@@ -3,6 +3,7 @@ package com.hl7client.ui.util;
 import com.hl7client.model.result.Hl7Error;
 import com.hl7client.model.result.Hl7ItemError;
 import com.hl7client.model.result.Hl7Result;
+import com.hl7client.model.result.Hl7Status;
 
 import javax.swing.*;
 import java.awt.*;
@@ -30,33 +31,45 @@ public final class Hl7UiErrorHandler {
             return;
         }
 
-        switch (result.getStatus()) {
+        Hl7Status status = result.getStatus();
 
-            case OK -> {
+        switch (status) {
+            case OK:
                 // no se muestra nada
-            }
+                break;
 
-            case PARTIAL -> mostrarResultadoParcial(
-                    parent,
-                    result.getDetails(),
-                    contexto,
-                    transac
-            );
+            case PARTIAL:
+                mostrarResultadoParcial(
+                        parent,
+                        result.getDetails(),
+                        contexto,
+                        transac
+                );
+                break;
 
-            case REJECTED -> mostrarErrorFuncional(
-                    parent,
-                    result.getIssue().orElse(null),
-                    result.getDetails(),
-                    contexto,
-                    transac
-            );
+            case REJECTED:
+                mostrarErrorFuncional(
+                        parent,
+                        result.getIssue().orElse(null),
+                        result.getDetails(),
+                        contexto,
+                        transac
+                );
+                break;
 
-            case ERROR -> mostrarErrorBloqueante(
-                    parent,
-                    result.getIssue().orElse(null),
-                    contexto,
-                    transac
-            );
+            case ERROR:
+                mostrarErrorBloqueante(
+                        parent,
+                        result.getIssue().orElse(null),
+                        contexto,
+                        transac
+                );
+                break;
+
+            default:
+                // Caso inesperado (defensivo)
+                mostrarErrorTecnico(parent, "Estado desconocido: " + status, contexto, transac);
+                break;
         }
     }
 
@@ -115,7 +128,7 @@ public final class Hl7UiErrorHandler {
         StringBuilder mensaje = new StringBuilder();
         mensaje.append(error.getMessage());
 
-        if (error.getCode() != null && !error.getCode().isBlank()) {
+        if (error.getCode() != null && !error.getCode().isEmpty()) {
             mensaje.append("\n\nCódigo: ").append(error.getCode());
         }
 

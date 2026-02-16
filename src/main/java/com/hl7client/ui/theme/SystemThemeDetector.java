@@ -43,13 +43,16 @@ public final class SystemThemeDetector {
                     "AppsUseLightTheme"
             ).start();
 
-            try (var reader = new java.io.BufferedReader(
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
                     new java.io.InputStreamReader(process.getInputStream()))) {
 
-                return reader.lines()
-                        .filter(line -> line.contains("AppsUseLightTheme"))
-                        .map(line -> line.trim().endsWith("0"))
-                        .findFirst();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("AppsUseLightTheme")) {
+                        return Optional.of(line.trim().endsWith("0"));
+                    }
+                }
+                return Optional.empty();
             }
         } catch (Exception e) {
             return Optional.empty();
@@ -76,4 +79,3 @@ public final class SystemThemeDetector {
         return Optional.empty();
     }
 }
-

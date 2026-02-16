@@ -1,5 +1,6 @@
 package com.hl7client.model.result;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -22,8 +23,8 @@ public final class Hl7Result<T> {
         this.data = data;
         this.issue = issue;
         this.details = details == null
-                ? List.of()
-                : Collections.unmodifiableList(details);
+                ? Collections.emptyList()                  // ← Java 8: empty immutable list
+                : Collections.unmodifiableList(new ArrayList<>(details));  // copia defensiva
     }
 
     // ========= FACTORIES =========
@@ -33,7 +34,7 @@ public final class Hl7Result<T> {
                 Hl7Status.OK,
                 data,
                 null,
-                List.of()
+                Collections.emptyList()                    // ← aquí
         );
     }
 
@@ -57,7 +58,7 @@ public final class Hl7Result<T> {
                 Hl7Status.REJECTED,
                 data,
                 functionalError,
-                List.of()
+                Collections.emptyList()                    // ← aquí
         );
     }
 
@@ -66,7 +67,7 @@ public final class Hl7Result<T> {
                 Hl7Status.ERROR,
                 null,
                 technicalError,
-                List.of()
+                Collections.emptyList()                    // ← aquí
         );
     }
 

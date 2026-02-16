@@ -35,7 +35,7 @@ public final class SessionRefreshManager {
         stop();
 
         String tokenExp = SessionContext.getTokenExp();
-        if (tokenExp == null || tokenExp.isBlank()) {
+        if (tokenExp == null || tokenExp.isEmpty()) {
             LOGGER.fine("No tokenExp present, refresh scheduler not started");
             return;
         }

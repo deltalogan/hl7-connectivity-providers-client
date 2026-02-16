@@ -1,5 +1,7 @@
 package com.hl7client.model.dental;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,8 +38,7 @@ public final class DentalToothData {
     }
 
     // Dientes permanentes (adultos)
-    private static final List<ToothEntry> PERMANENT_TEETH = List.of(
-            // Cuadrante superior derecho
+    private static final List<ToothEntry> PERMANENT_TEETH = Collections.unmodifiableList(Arrays.asList(
             new ToothEntry(11, "Incisivo central superior derecho", DentalPieceType.INCISIVO),
             new ToothEntry(12, "Incisivo lateral superior derecho", DentalPieceType.INCISIVO),
             new ToothEntry(13, "Canino superior derecho", DentalPieceType.CANINO),
@@ -47,7 +48,6 @@ public final class DentalToothData {
             new ToothEntry(17, "Segundo molar superior derecho", DentalPieceType.MOLAR),
             new ToothEntry(18, "Tercer molar superior derecho (muela del juicio)", DentalPieceType.MOLAR),
 
-            // Cuadrante superior izquierdo
             new ToothEntry(21, "Incisivo central superior izquierdo", DentalPieceType.INCISIVO),
             new ToothEntry(22, "Incisivo lateral superior izquierdo", DentalPieceType.INCISIVO),
             new ToothEntry(23, "Canino superior izquierdo", DentalPieceType.CANINO),
@@ -57,7 +57,6 @@ public final class DentalToothData {
             new ToothEntry(27, "Segundo molar superior izquierdo", DentalPieceType.MOLAR),
             new ToothEntry(28, "Tercer molar superior izquierdo (muela del juicio)", DentalPieceType.MOLAR),
 
-            // Cuadrante inferior izquierdo
             new ToothEntry(31, "Incisivo central inferior izquierdo", DentalPieceType.INCISIVO),
             new ToothEntry(32, "Incisivo lateral inferior izquierdo", DentalPieceType.INCISIVO),
             new ToothEntry(33, "Canino inferior izquierdo", DentalPieceType.CANINO),
@@ -67,7 +66,6 @@ public final class DentalToothData {
             new ToothEntry(37, "Segundo molar inferior izquierdo", DentalPieceType.MOLAR),
             new ToothEntry(38, "Tercer molar inferior izquierdo (muela del juicio)", DentalPieceType.MOLAR),
 
-            // Cuadrante inferior derecho
             new ToothEntry(41, "Incisivo central inferior derecho", DentalPieceType.INCISIVO),
             new ToothEntry(42, "Incisivo lateral inferior derecho", DentalPieceType.INCISIVO),
             new ToothEntry(43, "Canino inferior derecho", DentalPieceType.CANINO),
@@ -76,38 +74,34 @@ public final class DentalToothData {
             new ToothEntry(46, "Primer molar inferior derecho", DentalPieceType.MOLAR),
             new ToothEntry(47, "Segundo molar inferior derecho", DentalPieceType.MOLAR),
             new ToothEntry(48, "Tercer molar inferior derecho (muela del juicio)", DentalPieceType.MOLAR)
-    );
+    ));
 
     // Dientes temporales / deciduos (niños)
-    private static final List<ToothEntry> TEMPORARY_TEETH = List.of(
-            // Cuadrante superior derecho
+    private static final List<ToothEntry> TEMPORARY_TEETH = Collections.unmodifiableList(Arrays.asList(
             new ToothEntry(51, "Incisivo central superior derecho temporal", DentalPieceType.INCISIVO),
             new ToothEntry(52, "Incisivo lateral superior derecho temporal", DentalPieceType.INCISIVO),
             new ToothEntry(53, "Canino superior derecho temporal", DentalPieceType.CANINO),
             new ToothEntry(54, "Primer molar superior derecho temporal", DentalPieceType.MOLAR),
             new ToothEntry(55, "Segundo molar superior derecho temporal", DentalPieceType.MOLAR),
 
-            // Cuadrante superior izquierdo
             new ToothEntry(61, "Incisivo central superior izquierdo temporal", DentalPieceType.INCISIVO),
             new ToothEntry(62, "Incisivo lateral superior izquierdo temporal", DentalPieceType.INCISIVO),
             new ToothEntry(63, "Canino superior izquierdo temporal", DentalPieceType.CANINO),
             new ToothEntry(64, "Primer molar superior izquierdo temporal", DentalPieceType.MOLAR),
             new ToothEntry(65, "Segundo molar superior izquierdo temporal", DentalPieceType.MOLAR),
 
-            // Cuadrante inferior izquierdo
             new ToothEntry(71, "Incisivo central inferior izquierdo temporal", DentalPieceType.INCISIVO),
             new ToothEntry(72, "Incisivo lateral inferior izquierdo temporal", DentalPieceType.INCISIVO),
             new ToothEntry(73, "Canino inferior izquierdo temporal", DentalPieceType.CANINO),
             new ToothEntry(74, "Primer molar inferior izquierdo temporal", DentalPieceType.MOLAR),
             new ToothEntry(75, "Segundo molar inferior izquierdo temporal", DentalPieceType.MOLAR),
 
-            // Cuadrante inferior derecho
             new ToothEntry(81, "Incisivo central inferior derecho temporal", DentalPieceType.INCISIVO),
             new ToothEntry(82, "Incisivo lateral inferior derecho temporal", DentalPieceType.INCISIVO),
             new ToothEntry(83, "Canino inferior derecho temporal", DentalPieceType.CANINO),
             new ToothEntry(84, "Primer molar inferior derecho temporal", DentalPieceType.MOLAR),
             new ToothEntry(85, "Segundo molar inferior derecho temporal", DentalPieceType.MOLAR)
-    );
+    ));
 
     /**
      * Obtiene la lista de piezas dentales según el tipo de dentición.

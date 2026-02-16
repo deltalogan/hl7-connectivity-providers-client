@@ -62,7 +62,7 @@ public class AuthService implements AuthRefresher {
             );
         }
 
-        if (response.getBody() == null || response.getBody().isBlank()) {
+        if (response.getBody() == null || response.getBody().isEmpty()) {
             throw new RuntimeException(
                     "Respuesta vacía del servicio de autenticación"
             );
@@ -127,7 +127,7 @@ public class AuthService implements AuthRefresher {
             );
         }
 
-        if (response.getBody() == null || response.getBody().isBlank()) {
+        if (response.getBody() == null || response.getBody().isEmpty()) {
             logout();
             throw new RuntimeException(
                     "Respuesta vacía en auth-refresh"

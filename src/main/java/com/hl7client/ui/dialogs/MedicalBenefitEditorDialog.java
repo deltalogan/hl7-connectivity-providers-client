@@ -58,7 +58,7 @@ public class MedicalBenefitEditorDialog extends JDialog {
     private void postInit() {
         benefitSpinner.setModel(new SpinnerNumberModel(1, 1, MAX_QTY_PER_TYPE, 1));
 
-        var updateListener = new UpdateListener();
+        UpdateListener updateListener = new UpdateListener();
         benefitSpinner.addChangeListener(updateListener);
         benefitTextField.getDocument().addDocumentListener(updateListener);
 
@@ -223,7 +223,7 @@ public class MedicalBenefitEditorDialog extends JDialog {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0};

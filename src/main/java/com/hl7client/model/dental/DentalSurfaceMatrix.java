@@ -46,7 +46,6 @@ public final class DentalSurfaceMatrix {
             DentalSurface.INCISAL
     );
 
-
     /**
      * Retorna el conjunto de superficies permitidas para una pieza dada.
      *
@@ -57,10 +56,19 @@ public final class DentalSurfaceMatrix {
         if (piece == null) {
             return EnumSet.noneOf(DentalSurface.class);
         }
-        return switch (piece.getType()) {
-            case INCISIVO, CANINO -> ANTERIORES;
-            case PREMOLAR, MOLAR  -> POSTERIORES;
-        };
+
+        DentalPieceType type = piece.getType();
+
+        switch (type) {
+            case INCISIVO:
+            case CANINO:
+                return ANTERIORES;
+            case PREMOLAR:
+            case MOLAR:
+                return POSTERIORES;
+            default:
+                return EnumSet.noneOf(DentalSurface.class);
+        }
     }
 
     /**

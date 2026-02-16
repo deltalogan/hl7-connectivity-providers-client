@@ -24,7 +24,7 @@ public final class SessionContext {
 
     public static boolean isAuthenticated() {
         SessionState state = STATE.get();
-        return state.token() != null && !state.token().isBlank();
+        return state.token() != null && !state.token().isEmpty();
     }
 
     // ---------- TOKEN EXP ----------

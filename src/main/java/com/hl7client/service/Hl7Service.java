@@ -89,7 +89,7 @@ public class Hl7Service {
                 );
             }
 
-            if (response.getBody() == null || response.getBody().isBlank()) {
+            if (response.getBody() == null || response.getBody().isEmpty()) {
                 return errorRespuestaInvalida();
             }
 

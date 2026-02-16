@@ -13,7 +13,7 @@ public final class AppInfo {
                 .getPackage()
                 .getImplementationVersion();
 
-        if (version == null || version.isBlank()) {
+        if (version == null || version.isEmpty()) {
             return DEFAULT_VERSION + " (dev)";
         }
 

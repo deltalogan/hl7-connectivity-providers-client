@@ -23,8 +23,8 @@ public final class DentalBenefit implements BenefitItem {
         this.piece = piece;
 
         // Superficies opcionales (permitimos null o vacío)
-        this.surfaces = Collections.unmodifiableSet(
-                EnumSet.copyOf(surfaces != null ? surfaces : Set.of()));
+        Set<DentalSurface> tempSurfaces = (surfaces != null) ? surfaces : EnumSet.noneOf(DentalSurface.class);
+        this.surfaces = Collections.unmodifiableSet(EnumSet.copyOf(tempSurfaces));
 
         if (benefitCode == null || benefitCode.trim().isEmpty() || !benefitCode.matches("\\d+")) {
             throw new IllegalArgumentException("El código de prestación debe ser un número válido");
@@ -84,17 +84,9 @@ public final class DentalBenefit implements BenefitItem {
         // Pieza: vacío si no hay pieza
         String pieceStr = (piece != null) ? piece.getFdiCode() : "";
 
-        // Superficies: código concatenado o vacío
+        // Superficies: código concatenado o vacío, ordenado por prioridad
         String surfacesCode = surfaces.stream()
-                .sorted(Comparator.comparingInt(s -> switch (s) {
-                    case VESTIBULAR -> 0;
-                    case OCCLUSAL   -> 1;
-                    case DISTAL     -> 2;
-                    case MESIAL     -> 3;
-                    case LINGUAL    -> 4;
-                    case INCISAL    -> 5;
-                    case PALATAL    -> 6;
-                }))
+                .sorted(Comparator.comparingInt(DentalBenefit::getSurfacePriority))
                 .map(DentalSurface::getCode)
                 .collect(Collectors.joining());
 
@@ -102,15 +94,29 @@ public final class DentalBenefit implements BenefitItem {
 
         // Construcción explícita para garantizar separadores correctos
         StringBuilder sb = new StringBuilder();
-        sb.append("1^*");                        // total + separador cantidad-código
-        sb.append(pieceStr);                    // pieza (vacío si null)
-        sb.append("*");                         // separador pieza → superficies
-        sb.append(surfacesCode);                // superficies (vacío si ninguna)
-        sb.append("*");                         // separador superficies → código
-        sb.append(codeWithPrefix);              // código con prefijo O
-        sb.append("*P*1**");                    // origen P + cantidad 1 + terminador
+        sb.append("1^*");               // total + separador cantidad-código
+        sb.append(pieceStr);            // pieza (vacío si null)
+        sb.append("*");                 // separador pieza → superficies
+        sb.append(surfacesCode);        // superficies (vacío si ninguna)
+        sb.append("*");                 // separador superficies → código
+        sb.append(codeWithPrefix);      // código con prefijo O
+        sb.append("*P*1**");            // origen P + cantidad 1 + terminador
 
         return sb.toString();
+    }
+
+    // Helper para ordenar superficies (reemplaza el switch expression)
+    private static int getSurfacePriority(DentalSurface s) {
+        switch (s) {
+            case VESTIBULAR: return 0;
+            case OCCLUSAL:   return 1;
+            case DISTAL:     return 2;
+            case MESIAL:     return 3;
+            case LINGUAL:    return 4;
+            case INCISAL:    return 5;
+            case PALATAL:    return 6;
+            default:         return 99;  // fallback para enums nuevos
+        }
     }
 
     @Override

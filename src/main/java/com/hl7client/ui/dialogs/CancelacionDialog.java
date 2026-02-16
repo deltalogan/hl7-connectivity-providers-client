@@ -9,6 +9,7 @@ import com.hl7client.model.dto.request.hl7.CancelacionRequest;
 import com.hl7client.model.dto.request.hl7.Manual;
 import com.hl7client.model.dto.request.hl7.RegistracionRequest;
 import com.hl7client.model.dto.response.hl7.CancelacionCabecera;
+import com.hl7client.model.dto.response.hl7.CancelacionDetalle;
 import com.hl7client.model.dto.response.hl7.CancelacionResponse;
 import com.hl7client.model.result.Hl7Result;
 import com.hl7client.ui.util.AcceptAction;
@@ -47,7 +48,7 @@ public class CancelacionDialog extends JDialog {
     public CancelacionDialog(Window owner, Hl7Controller hl7Controller, String titulo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.hl7Controller = Objects.requireNonNull(hl7Controller);
-        setTitle(Objects.requireNonNullElse(titulo, "Cancelación"));
+        setTitle(titulo != null ? titulo : "Cancelación");
 
         initComponents();
         initDatePicker();
@@ -198,7 +199,7 @@ public class CancelacionDialog extends JDialog {
         request.setManual(manualValue(manualTextField));
 
         request.setTicketExt(
-                ticketExtTextField.getText().isBlank()
+                ticketExtTextField.getText().isEmpty()
                         ? 0
                         : Integer.parseInt(ticketExtTextField.getText())
         );
@@ -220,7 +221,7 @@ public class CancelacionDialog extends JDialog {
             String p1 = temp.getParam1();
             String p2 = temp.getParam2();
 
-            request.setParam1(p1 != null && !p1.isBlank() ? p1 : "0");
+            request.setParam1(p1 != null && !p1.isEmpty() ? p1 : "0");
             request.setParam2(p2 != null ? p2 : "");
         }
 
@@ -235,27 +236,33 @@ public class CancelacionDialog extends JDialog {
     }
 
     private String textValue(JTextField field) {
-        return field.getText().isBlank() ? null : field.getText().trim();
+        return field.getText().isEmpty() ? null : field.getText().trim();
     }
 
     private Integer intValue(JTextField field) {
         String txt = field.getText().trim();
-        return txt.isBlank() ? null : Integer.parseInt(txt);
+        return txt.isEmpty() ? null : Integer.parseInt(txt);
     }
 
     private Long longValue(JTextField field) {
         String txt = field.getText().trim();
-        return txt.isBlank() ? null : Long.parseLong(txt);
+        return txt.isEmpty() ? null : Long.parseLong(txt);
     }
 
     private Manual manualValue(JTextField field) {
-        if (field.getText().isBlank()) return null;
-        return switch (field.getText().trim().toUpperCase()) {
-            case "0" -> Manual.MANUAL;
-            case "C" -> Manual.CAPITADOR;
-            case "L" -> Manual.COMSULTA;
-            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + field.getText());
-        };
+        String txt = field.getText().trim().toUpperCase();
+        if (txt.isEmpty()) return null;
+
+        switch (txt) {
+            case "0":
+                return Manual.MANUAL;
+            case "C":
+                return Manual.CAPITADOR;
+            case "L":
+                return Manual.COMSULTA;
+            default:
+                throw new IllegalArgumentException("Valor inválido para Manual: " + field.getText());
+        }
     }
 
     // =========================================================
@@ -267,7 +274,9 @@ public class CancelacionDialog extends JDialog {
 
         if (response.getDetalle() != null && response.getDetalle().length > 0) {
             sb.append("\nDetalle:\n");
-            for (var det : response.getDetalle()) {
+
+            // ← Cambio clave: tipo explícito en lugar de var
+            for (CancelacionDetalle det : response.getDetalle()) {
                 sb.append("- ").append(det.getDenoItem()).append("\n");
             }
         }
@@ -318,7 +327,7 @@ public class CancelacionDialog extends JDialog {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0};

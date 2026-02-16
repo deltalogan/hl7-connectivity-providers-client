@@ -10,12 +10,24 @@ public class EnvironmentConfig {
     // ---------- BASE URL POR ENV ----------
 
     public static String getBaseUrl(Environment env) {
-        return switch (env) {
-            case DEV -> PropertiesUtil.get("env.base.url.dev");
-            case QA -> PropertiesUtil.get("env.base.url.qa");
-            case PRE -> PropertiesUtil.get("env.base.url.pre");
-            case PRD -> PropertiesUtil.get("env.base.url.prd");
-        };
+        String urlKey;
+        switch (env) {
+            case DEV:
+                urlKey = "env.base.url.dev";
+                break;
+            case QA:
+                urlKey = "env.base.url.qa";
+                break;
+            case PRE:
+                urlKey = "env.base.url.pre";
+                break;
+            case PRD:
+                urlKey = "env.base.url.prd";
+                break;
+            default:
+                throw new IllegalArgumentException("Entorno no soportado: " + env);
+        }
+        return PropertiesUtil.get(urlKey);
     }
 
     // ---------- AUTH ----------

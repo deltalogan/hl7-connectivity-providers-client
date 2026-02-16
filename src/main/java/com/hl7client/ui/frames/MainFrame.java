@@ -169,7 +169,7 @@ public class MainFrame extends JFrame {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         logScrollPane = new JScrollPane();
         logTable = new JTable();
         eligibilityButton = new JButton();
@@ -178,7 +178,7 @@ public class MainFrame extends JFrame {
         logoutButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0};
@@ -222,7 +222,7 @@ public class MainFrame extends JFrame {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JScrollPane logScrollPane;
     private JTable logTable;
     private JButton eligibilityButton;

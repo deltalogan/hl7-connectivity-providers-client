@@ -50,7 +50,7 @@ public class RegistracionDialog extends JDialog {
     public RegistracionDialog(Window owner, Hl7Controller hl7Controller, String titulo) {
         super(owner, ModalityType.APPLICATION_MODAL);
         this.hl7Controller = Objects.requireNonNull(hl7Controller);
-        setTitle(Objects.requireNonNullElse(titulo, "Registración"));
+        setTitle(titulo != null ? titulo : "Registración");
 
         initComponents();
         initDatePickers();
@@ -296,7 +296,7 @@ public class RegistracionDialog extends JDialog {
         request.setCuit(textValue(cuitTextField));
         request.setOriMatri(textValue(oriMatriTextField));
         request.setAutoriz(
-                autorizTextField.getText().isBlank()
+                autorizTextField.getText().isEmpty()
                         ? Integer.valueOf(0)
                         : intValue(autorizTextField)
         );
@@ -316,7 +316,7 @@ public class RegistracionDialog extends JDialog {
 
         BenefitRequestMapper.apply(request, benefits);
 
-        if (!powerBuilderTextField.getText().isBlank()) {
+        if (!powerBuilderTextField.getText().isEmpty()) {
             request.setPowerBuilder(powerBuilderTextField.getText().trim().equals("1"));
         }
 
@@ -324,7 +324,7 @@ public class RegistracionDialog extends JDialog {
     }
 
     private void mostrarResultado(RegistracionResponse response) {
-        var cab = response.getCabecera();
+        RegistracionCabecera cab = response.getCabecera();
         String mensaje =
                 "Afiliado: " + cab.getApeNom().trim() + "\n" +
                         "Plan: " + cab.getPlanCodi().trim() + "\n" +
@@ -341,23 +341,28 @@ public class RegistracionDialog extends JDialog {
     }
 
     private String textValue(JTextField field) {
-        return field.getText().isBlank() ? null : field.getText().trim();
+        return field.getText().isEmpty() ? null : field.getText().trim();
     }
 
     private Integer intValue(JTextField field) {
         String txt = field.getText().trim();
-        return txt.isBlank() ? null : Integer.parseInt(txt);
+        return txt.isEmpty() ? null : Integer.parseInt(txt);
     }
 
     private Manual manualValue(JTextField field) {
         String txt = field.getText().trim().toUpperCase();
-        if (txt.isBlank()) return null;
-        return switch (txt) {
-            case "0" -> Manual.MANUAL;
-            case "C" -> Manual.CAPITADOR;
-            case "L" -> Manual.COMSULTA;
-            default -> throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
-        };
+        if (txt.isEmpty()) return null;
+
+        switch (txt) {
+            case "0":
+                return Manual.MANUAL;
+            case "C":
+                return Manual.CAPITADOR;
+            case "L":
+                return Manual.COMSULTA;
+            default:
+                throw new IllegalArgumentException("Valor inválido para Manual: " + txt);
+        }
     }
 
     private void installCloseBehavior() {
@@ -428,7 +433,7 @@ public class RegistracionDialog extends JDialog {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};

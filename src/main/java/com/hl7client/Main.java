@@ -21,7 +21,7 @@ import java.util.logging.Logger;
     private static void showFatalError(Exception e) {
         LOGGER.log(Level.SEVERE, "Error fatal al iniciar la aplicación", e);
 
-        String detail = (e.getMessage() != null && !e.getMessage().isBlank())
+        String detail = (e.getMessage() != null && !e.getMessage().isEmpty())
                 ? e.getMessage()
                 : e.getClass().getSimpleName();
 

@@ -107,9 +107,9 @@ public class LoginFrame extends JFrame {
     // =========================================================
 
     private Hl7Result<Void> doLogin() {
-        if (getEmail().isBlank()
+        if (getEmail().isEmpty()
                 || getPassword().length == 0
-                || getApiKey().isBlank()) {
+                || getApiKey().isEmpty()) {
 
             return Hl7Result.rejected(
                     null,
@@ -224,7 +224,7 @@ public class LoginFrame extends JFrame {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
-        // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+        // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
         languageComboBox = new JComboBox();
         themeButton = new JButton();
         loginLabel = new JLabel();
@@ -240,7 +240,7 @@ public class LoginFrame extends JFrame {
         cancelButton = new JButton();
 
         //======== this ========
-        var contentPane = getContentPane();
+        Container contentPane = getContentPane();
         contentPane.setLayout(new GridBagLayout());
         ((GridBagLayout)contentPane.getLayout()).columnWidths = new int[] {0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
@@ -309,7 +309,7 @@ public class LoginFrame extends JFrame {
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
-    // Generated using JFormDesigner Evaluation license - meagan.carter169@mazun.org
+    // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
     private JComboBox languageComboBox;
     private JButton themeButton;
     private JLabel loginLabel;
