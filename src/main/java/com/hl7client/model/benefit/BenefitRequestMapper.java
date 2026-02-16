@@ -1,6 +1,6 @@
 package com.hl7client.model.benefit;
 
-import com.hl7client.model.Hl7Constants;
+import com.hl7client.model.constants.Hl7Constants;
 import com.hl7client.model.dto.request.hl7.RegistracionRequest;
 import com.hl7client.model.dental.DentalBenefit;
 

@@ -3,7 +3,7 @@ package com.hl7client.ui.dialogs;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 import com.hl7client.controller.Hl7Controller;
-import com.hl7client.model.Hl7Constants;
+import com.hl7client.model.constants.Hl7Constants;
 import com.hl7client.model.benefit.BenefitItem;
 import com.hl7client.model.benefit.BenefitRequestMapper;
 import com.hl7client.model.dto.request.hl7.Manual;

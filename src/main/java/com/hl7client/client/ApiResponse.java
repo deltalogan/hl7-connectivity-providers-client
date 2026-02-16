@@ -22,6 +22,7 @@ public final class ApiResponse {
         return body;
     }
 
+    @SuppressWarnings("unused")
     public Map<String, String> getHeaders() {
         return headers;
     }

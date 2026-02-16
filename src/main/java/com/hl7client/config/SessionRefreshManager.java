@@ -12,7 +12,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class SessionRefreshManager {
+public final class
+SessionRefreshManager {
 
     private static final Logger LOGGER =
             Logger.getLogger(SessionRefreshManager.class.getName());

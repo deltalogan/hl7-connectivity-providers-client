@@ -1,4 +1,4 @@
-package com.hl7client.model;
+package com.hl7client.model.constants;
 
 /**
  * Constantes relacionadas con el formato y límites HL7 para prestaciones.

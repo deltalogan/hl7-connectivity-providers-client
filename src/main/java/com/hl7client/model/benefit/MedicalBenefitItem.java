@@ -76,6 +76,7 @@ public final class MedicalBenefitItem implements BenefitItem {
      * Crea una nueva instancia con la misma prestación pero cantidad diferente.
      * Útil para edición.
      */
+    @SuppressWarnings("unused")
     public MedicalBenefitItem withQuantity(int newQuantity) {
         return of(newQuantity, this.benefitCode);
     }

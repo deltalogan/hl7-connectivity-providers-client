@@ -1,6 +1,6 @@
 package com.hl7client.ui.dialogs;
 
-import com.hl7client.model.Hl7Constants;
+import com.hl7client.model.constants.Hl7Constants;
 import com.hl7client.model.dental.*;
 
 import com.hl7client.ui.util.DialogUtils;

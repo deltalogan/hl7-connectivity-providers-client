@@ -63,10 +63,12 @@ public final class SessionState {
                 && device == null;
     }
 
+    @SuppressWarnings("unused")
     public boolean hasAuth() {
         return token != null && !token.trim().isEmpty();
     }
 
+    @SuppressWarnings("unused")
     public boolean isInitialized() {
         return environment != null && device != null;
     }
