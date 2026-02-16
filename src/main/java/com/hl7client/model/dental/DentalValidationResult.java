@@ -83,11 +83,9 @@ public final class DentalValidationResult {
         if (valid) {
             return "<html><font color='green'>Validación exitosa</font></html>";
         }
-        StringBuilder sb = new StringBuilder("<html><font color='red'>");
-        sb.append("Errores de validación:<br>• ");
-        sb.append(String.join("<br>• ", errors));
-        sb.append("</font></html>");
-        return sb.toString();
+        return "<html><font color='red'>" + "Errores de validación:<br>• " +
+                String.join("<br>• ", errors) +
+                "</font></html>";
     }
 
     @Override

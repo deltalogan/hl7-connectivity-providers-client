@@ -38,17 +38,6 @@ public final class DentalBenefit implements BenefitItem {
         }
     }
 
-    /**
-     * Método "with" para crear una copia con valores actualizados (ideal para edición)
-     */
-    public DentalBenefit with(DentalPiece newPiece, Set<DentalSurface> newSurfaces, String newBenefitCode) {
-        return new DentalBenefit(
-                newPiece != null ? newPiece : this.piece,
-                newSurfaces != null && !newSurfaces.isEmpty() ? newSurfaces : this.surfaces,
-                newBenefitCode != null && !newBenefitCode.trim().isEmpty() ? newBenefitCode : this.benefitCode
-        );
-    }
-
     public DentalPiece getPiece() {
         return piece;
     }
@@ -93,16 +82,15 @@ public final class DentalBenefit implements BenefitItem {
         String codeWithPrefix = "O" + benefitCode;
 
         // Construcción explícita para garantizar separadores correctos
-        StringBuilder sb = new StringBuilder();
-        sb.append("1^*");               // total + separador cantidad-código
-        sb.append(pieceStr);            // pieza (vacío si null)
-        sb.append("*");                 // separador pieza → superficies
-        sb.append(surfacesCode);        // superficies (vacío si ninguna)
-        sb.append("*");                 // separador superficies → código
-        sb.append(codeWithPrefix);      // código con prefijo O
-        sb.append("*P*1**");            // origen P + cantidad 1 + terminador
+        // origen P + cantidad 1 + terminador
 
-        return sb.toString();
+        return "1^*" +               // total + separador cantidad-código
+                pieceStr +            // pieza (vacío si null)
+                "*" +                 // separador pieza → superficies
+                surfacesCode +        // superficies (vacío si ninguna)
+                "*" +                 // separador superficies → código
+                codeWithPrefix +      // código con prefijo O
+                "*P*1**";
     }
 
     // Helper para ordenar superficies (reemplaza el switch expression)
