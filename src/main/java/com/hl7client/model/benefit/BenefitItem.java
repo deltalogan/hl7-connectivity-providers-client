@@ -2,7 +2,7 @@ package com.hl7client.model.benefit;
 
 /**
  * Contrato base para cualquier beneficio (médico u odontológico).
- *
+ * <p>
  * Representa una unidad lógica serializable a HL7,
  * independiente de UI y de la capa de transporte.
  */

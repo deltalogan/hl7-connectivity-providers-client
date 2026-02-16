@@ -1,6 +1,6 @@
 package com.hl7client.controller;
 
-import com.hl7client.client.AuthExpiredException;
+import com.hl7client.client.AuthProblemException;
 import com.hl7client.client.AuthRefresher;
 import com.hl7client.config.Environment;
 import com.hl7client.config.SessionEndReason;
@@ -15,7 +15,6 @@ import java.util.Objects;
 
 public class LoginController implements AuthRefresher {
 
-    private final LoginFrame view;
     private final AuthService authService;
     private LoginListener loginListener;
 
@@ -23,9 +22,9 @@ public class LoginController implements AuthRefresher {
             LoginFrame view,
             AuthService authService
     ) {
-        this.view = Objects.requireNonNull(view);
+        LoginFrame view1 = Objects.requireNonNull(view);
         this.authService = Objects.requireNonNull(authService);
-        this.view.setController(this);
+        view1.setController(this);
     }
 
     // -------------------------------------------------
@@ -93,18 +92,17 @@ public class LoginController implements AuthRefresher {
     // -------------------------------------------------
     // AUTH REFRESH
     // -------------------------------------------------
-
     @Override
     public void refreshAuth() {
         try {
             authService.refreshAuth();
 
-        } catch (AuthExpiredException e) {
-            // 401 real → token inválido / revocado
+        } catch (AuthProblemException e) {
+            // 401 / 403 real → token inválido / revocado / no autorizado
             notifySessionEnd(SessionEndReason.UNAUTHORIZED);
 
         } catch (Exception e) {
-            // refresh fallido → expiración normal
+            // cualquier otro problema (500, timeout, json roto, etc.)
             notifySessionEnd(SessionEndReason.SESSION_EXPIRED);
         }
     }

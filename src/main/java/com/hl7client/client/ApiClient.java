@@ -1,6 +1,7 @@
 package com.hl7client.client;
 
 import com.hl7client.config.SessionContext;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -24,9 +25,10 @@ public class ApiClient {
 
     public ApiClient(AuthRefresher authRefresher) {
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(10_000)      // 10 segundos
+                .setConnectTimeout(10_000)           // 10 segundos
                 .setConnectionRequestTimeout(10_000)
-                .setSocketTimeout(30_000)       // 30 segundos
+                .setSocketTimeout(30_000)            // 30 segundos
+                .setCookieSpec(CookieSpecs.STANDARD) // ← Soluciona warning de cookies Cloudflare (Expires con coma y año 4 dígitos)
                 .build();
 
         this.httpClient = HttpClients.custom()
@@ -66,7 +68,7 @@ public class ApiClient {
 
             logResponse(statusCode, responseBody);
 
-            // Refresh automático si 401
+            // Refresh automático si 401 (solo una vez)
             if (statusCode == 401 && allowRetry && canRefresh(url)) {
                 LOGGER.info("401 received, attempting auth refresh");
                 authRefresher.refreshAuth();
@@ -115,7 +117,7 @@ public class ApiClient {
         System.out.println("============");
     }
 
-    // Helpers (mismos que antes)
+    // Helpers
     private boolean canRefresh(String url) {
         return SessionContext.isAuthenticated()
                 && !url.contains("auth-login")
@@ -138,7 +140,7 @@ public class ApiClient {
         return finalHeaders;
     }
 
-    // Opcional: cerrar el cliente al destruir (buena práctica)
+    // Buena práctica: cerrar el cliente cuando ya no se necesite
     public void close() throws IOException {
         httpClient.close();
     }

@@ -2,6 +2,7 @@ package com.hl7client.service;
 
 import com.hl7client.client.ApiClient;
 import com.hl7client.client.ApiResponse;
+import com.hl7client.client.AuthProblemException;
 import com.hl7client.client.AuthRefresher;
 import com.hl7client.config.Environment;
 import com.hl7client.config.EnvironmentConfig;
@@ -97,21 +98,14 @@ public class AuthService implements AuthRefresher {
     private void doRefresh() {
 
         if (!SessionContext.isAuthenticated()) {
-            throw new IllegalStateException(
-                    "No hay sesión activa para refrescar"
-            );
+            throw new IllegalStateException("No hay sesión activa para refrescar");
         }
 
         if (SessionContext.getDevice() == null) {
-            throw new IllegalStateException(
-                    "No hay información de device en sesión"
-            );
+            throw new IllegalStateException("No hay información de device en sesión");
         }
 
-        String url = EnvironmentConfig.getAuthRefreshUrl(
-                SessionContext.getEnvironment()
-        );
-
+        String url = EnvironmentConfig.getAuthRefreshUrl(SessionContext.getEnvironment());
         String body = JsonUtil.toJson(SessionContext.getDevice());
 
         Map<String, String> headers = new HashMap<>();
@@ -120,11 +114,17 @@ public class AuthService implements AuthRefresher {
         ApiResponse response = apiClient.post(url, body, headers);
 
         if (response.isHttpError()) {
-            logout(); // 🔴 limpieza fuerte
-            throw new RuntimeException(
-                    "Error técnico en auth-refresh (HTTP "
-                            + response.getStatusCode() + ")"
-            );
+            int status = response.getStatusCode();
+
+            logout();  // limpieza fuerte
+
+            if (status == 401 || status == 403) {
+                // Token inválido, revocado, expirado sin posibilidad de refresh, etc.
+                throw new AuthProblemException("Credenciales inválidas en refresh (HTTP " + status + ")");
+            } else {
+                // Otros errores del servidor o de red
+                throw new RuntimeException("Error técnico en auth-refresh (HTTP " + status + ")");
+            }
         }
 
         if (response.getBody() == null || response.getBody().isEmpty()) {
