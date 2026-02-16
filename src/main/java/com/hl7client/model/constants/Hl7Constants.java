@@ -12,14 +12,21 @@ public final class Hl7Constants {
     public static final int MAX_LENGTH_ODONTOLOGIA = MAX_LENGTH_PER_PARAM;                   // 255
 
     // Formatos y separadores
+    @SuppressWarnings("unused")
     public static final String SEGMENT_SEPARATOR = "|";
+    @SuppressWarnings("unused")
     public static final String FIELD_SEPARATOR = "*";
+    @SuppressWarnings("unused")
     public static final String COUNT_SEPARATOR = "^";
 
     // Valores fijos odontología
+    @SuppressWarnings("unused")
     public static final String DENTAL_TOTAL_COUNT = "1";
+    @SuppressWarnings("unused")
     public static final String DENTAL_ORIGIN = "P";
+    @SuppressWarnings("unused")
     public static final String DENTAL_ITEM_QUANTITY = "1";
+    @SuppressWarnings("unused")
     public static final String DENTAL_PREFIX = "O";
 
     private Hl7Constants() {

@@ -141,6 +141,7 @@ public class ApiClient {
     }
 
     // Buena práctica: cerrar el cliente cuando ya no se necesite
+    @SuppressWarnings("unused")
     public void close() throws IOException {
         httpClient.close();
     }

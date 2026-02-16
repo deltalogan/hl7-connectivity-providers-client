@@ -16,22 +16,27 @@ public class DeviceRequest {
         this.recordar = false;
     }
 
+    @SuppressWarnings("unused")
     public String getMessagingid() {
         return messagingid;
     }
 
+    @SuppressWarnings("unused")
     public String getDeviceid() {
         return deviceid;
     }
 
+    @SuppressWarnings("unused")
     public String getDevicename() {
         return devicename;
     }
 
+    @SuppressWarnings("unused")
     public boolean isBloqueado() {
         return bloqueado;
     }
 
+    @SuppressWarnings("unused")
     public boolean isRecordar() {
         return recordar;
     }

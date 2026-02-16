@@ -47,6 +47,7 @@ public enum DentalSurface {
      * Versión conveniente para convertir un string de superficies (ej: "VML")
      * en conjunto de DentalSurface.
      */
+    @SuppressWarnings("unused")
     public static Set<DentalSurface> fromCodes(String codes) {
         Set<DentalSurface> result = EnumSet.noneOf(DentalSurface.class);
         if (codes == null || codes.isEmpty()) {

@@ -58,6 +58,7 @@ public final class DentalValidationResult {
      * Retorna la lista de mensajes de error (inmutable).
      * Está vacía si isValid() == true.
      */
+    @SuppressWarnings("unused")
     public List<String> getErrors() {
         return errors;
     }
@@ -79,6 +80,7 @@ public final class DentalValidationResult {
     /**
      * Versión HTML del mensaje (ideal para mostrar en diálogos o tooltips).
      */
+    @SuppressWarnings("unused")
     public String getHtmlMessage() {
         if (valid) {
             return "<html><font color='green'>Validación exitosa</font></html>";
