@@ -19,19 +19,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.net.URL;
-import java.text.MessageFormat;
 
 public class LoginFrame extends JFrame {
 
     private LoginController controller;
-    private CloseAction closeAction;
+    private final CloseAction closeAction;
 
     private static final double MINIMUM_SCREEN_RATIO = 0.40;
     private static final double SCREEN_RATIO = 0.50;
 
-    private static final String IMAGE_PATH_LOGO = "/icons/logo.png";
-    private static final String IMAGE_PATH_ICON = "/icons/icon.png";
-    private static final String SPLASH_PATH = "/icons/splash.gif";
+    private static final String IMAGE_PATH_LOGO  = "/icons/logo.png";
+    private static final String IMAGE_PATH_ICON  = "/icons/icon.png";
+    private static final String SPLASH_PATH      = "/icons/splash.gif";
 
     public LoginFrame(Application application) {
         initComponents();
@@ -148,7 +147,8 @@ public class LoginFrame extends JFrame {
 
     private void configureFrame() {
         setTitle(AppInfo.loginTitle());
-        Image icon = loadImageResource(IMAGE_PATH_ICON);
+
+        Image icon = loadIcon();
         if (icon != null) {
             setIconImage(icon);
         }
@@ -156,7 +156,7 @@ public class LoginFrame extends JFrame {
         pack();
 
         // Establecemos tamaño mínimo proporcional a la pantalla
-        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);  // ≈ 22% → ajustable
+        WindowSizer.applyRelativeMinimumSize(this, MINIMUM_SCREEN_RATIO);
 
         // Aplicamos tamaño inicial deseado
         WindowSizer.applyRelativeScreenSize(this, SCREEN_RATIO);
@@ -208,15 +208,10 @@ public class LoginFrame extends JFrame {
     // Resources
     // =========================================================
 
-    private Image loadImageResource(String resourcePath) {
-        URL url = getClass().getResource(resourcePath);
+    private Image loadIcon() {
+        URL url = getClass().getResource(IMAGE_PATH_ICON);
         if (url == null) {
-            System.err.println(
-                    MessageFormat.format(
-                            "Resource not found: {0}",
-                            resourcePath
-                    )
-            );
+            System.err.println("Resource not found: " + IMAGE_PATH_ICON);
             return null;
         }
         return new ImageIcon(url).getImage();
@@ -225,7 +220,7 @@ public class LoginFrame extends JFrame {
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
         // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
-        languageComboBox = new JComboBox();
+        languageComboBox = new JComboBox<>();
         themeButton = new JButton();
         loginLabel = new JLabel();
         emailLabel = new JLabel();
@@ -235,7 +230,7 @@ public class LoginFrame extends JFrame {
         apiKeyLabel = new JLabel();
         apiKeyTextField = new JTextField();
         environmentLabel = new JLabel();
-        environmentComboBox = new JComboBox();
+        environmentComboBox = new JComboBox<>();
         acceptButton = new JButton();
         cancelButton = new JButton();
 
@@ -246,6 +241,11 @@ public class LoginFrame extends JFrame {
         ((GridBagLayout)contentPane.getLayout()).rowHeights = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
         ((GridBagLayout)contentPane.getLayout()).columnWeights = new double[] {1.0, 1.0, 1.0E-4};
         ((GridBagLayout)contentPane.getLayout()).rowWeights = new double[] {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-4};
+
+        //---- languageComboBox ----
+        languageComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
+            "String"
+        }));
         contentPane.add(languageComboBox, new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
@@ -288,6 +288,11 @@ public class LoginFrame extends JFrame {
         contentPane.add(environmentLabel, new GridBagConstraints(0, 5, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
+
+        //---- environmentComboBox ----
+        environmentComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
+            "String"
+        }));
         contentPane.add(environmentComboBox, new GridBagConstraints(1, 5, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 0), 0, 0));
@@ -310,7 +315,7 @@ public class LoginFrame extends JFrame {
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
     // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
-    private JComboBox languageComboBox;
+    private JComboBox<String> languageComboBox;
     private JButton themeButton;
     private JLabel loginLabel;
     private JLabel emailLabel;
@@ -320,7 +325,7 @@ public class LoginFrame extends JFrame {
     private JLabel apiKeyLabel;
     private JTextField apiKeyTextField;
     private JLabel environmentLabel;
-    private JComboBox environmentComboBox;
+    private JComboBox<String> environmentComboBox;
     private JButton acceptButton;
     private JButton cancelButton;
     // JFormDesigner - End of variables declaration  //GEN-END:variables  @formatter:on

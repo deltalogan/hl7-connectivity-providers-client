@@ -15,7 +15,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.net.URL;
-import java.text.MessageFormat;
 import java.util.Objects;
 
 public class MainFrame extends JFrame {
@@ -54,7 +53,7 @@ public class MainFrame extends JFrame {
     // -------------------------------------------------
 
     private void configureFrame() {
-        Image icon = loadImageResource(IMAGE_PATH_ICON);
+        Image icon = loadIcon();
         if (icon != null) {
             setIconImage(icon);
         }
@@ -70,15 +69,10 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    private Image loadImageResource(String resourcePath) {
-        URL url = getClass().getResource(resourcePath);
+    private Image loadIcon() {
+        URL url = getClass().getResource(IMAGE_PATH_ICON);
         if (url == null) {
-            System.err.println(
-                    MessageFormat.format(
-                            "Resource not found: {0}",
-                            resourcePath
-                    )
-            );
+            System.err.println("Resource not found: " + IMAGE_PATH_ICON);
             return null;
         }
         return new ImageIcon(url).getImage();

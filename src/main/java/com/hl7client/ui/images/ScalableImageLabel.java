@@ -5,8 +5,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ScalableImageLabel extends JLabel {
+
+    private static final Logger logger = Logger.getLogger(ScalableImageLabel.class.getName());
 
     private BufferedImage image;
     private boolean gifMode;
@@ -38,7 +42,10 @@ public class ScalableImageLabel extends JLabel {
         try {
             image = ImageIO.read(imageUrl);
         } catch (Exception e) {
-            e.printStackTrace();
+            // Reemplazamos printStackTrace por logging robusto
+            logger.log(Level.SEVERE, "No se pudo cargar la imagen desde: {0}", new Object[]{imageUrl, e});
+            // O versión más simple sin stack trace completo:
+            // logger.log(Level.SEVERE, "Error al leer imagen de URL: " + imageUrl, e);
         }
 
         repaint();

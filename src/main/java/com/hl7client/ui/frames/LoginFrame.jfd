@@ -14,6 +14,10 @@ new FormModel {
 			name: "this"
 			add( new FormComponent( "javax.swing.JComboBox" ) {
 				name: "languageComboBox"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "String"
+					addElement( "String" )
+				}
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"hAlign": 2
 			} )
@@ -77,6 +81,10 @@ new FormModel {
 			} )
 			add( new FormComponent( "javax.swing.JComboBox" ) {
 				name: "environmentComboBox"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "String"
+					addElement( "String" )
+				}
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridx": 1
 				"gridy": 5

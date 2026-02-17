@@ -78,6 +78,7 @@ public class RegistracionDialog extends JDialog {
         updateBenefitsSummary();
     }
 
+    @SuppressWarnings({"unchecked"})
     private void initTipoMensajeControls() {
         tipoMensajeComboBox.setModel(new DefaultComboBoxModel<>(TipoMensaje.values()));
         tipoMensajeComboBox.setSelectedItem(null);
@@ -371,6 +372,7 @@ public class RegistracionDialog extends JDialog {
         DialogUtils.installCloseAction(this, cancelAction);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
         // Generated using JFormDesigner Evaluation license - margarita85_362@lazer.lat
@@ -694,6 +696,9 @@ public class RegistracionDialog extends JDialog {
         contentPane.add(tipoMensajeLabel, new GridBagConstraints(0, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.EAST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
+
+        //---- tipoMensajeComboBox ----
+        tipoMensajeComboBox.setPrototypeDisplayValue("TipoMensaje");
         contentPane.add(tipoMensajeComboBox, new GridBagConstraints(1, 13, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
