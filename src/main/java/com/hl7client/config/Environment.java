@@ -1,7 +1,6 @@
 package com.hl7client.config;
 
-public enum
-Environment {
+public enum Environment {
     DEV,
     QA,
     PRE,

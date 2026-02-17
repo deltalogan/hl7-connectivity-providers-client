@@ -19,16 +19,10 @@ public final class DentalValidationResult {
         this.errors = Collections.unmodifiableList(new ArrayList<>(errors));
     }
 
-    /**
-     * Crea un resultado de validación exitosa (sin errores).
-     */
     public static DentalValidationResult ok() {
         return new DentalValidationResult(true, Collections.emptyList());
     }
 
-    /**
-     * Crea un resultado de validación con un único error.
-     */
     public static DentalValidationResult error(String message) {
         Objects.requireNonNull(message, "El mensaje de error no puede ser null");
         List<String> errors = new ArrayList<>();
@@ -36,9 +30,6 @@ public final class DentalValidationResult {
         return new DentalValidationResult(false, errors);
     }
 
-    /**
-     * Crea un resultado de validación con múltiples errores.
-     */
     public static DentalValidationResult errors(List<String> errorMessages) {
         Objects.requireNonNull(errorMessages, "La lista de errores no puede ser null");
         if (errorMessages.isEmpty()) {
@@ -48,15 +39,15 @@ public final class DentalValidationResult {
     }
 
     /**
-     * Indica si la validación fue exitosa (sin errores).
+     * Indica si la validación **falló** (hay al menos un error).
      */
-    public boolean isValid() {
-        return valid;
+    public boolean hasErrors() {
+        return valid;   // ← Corrección clave aquí
     }
 
     /**
      * Retorna la lista de mensajes de error (inmutable).
-     * Está vacía si isValid() == true.
+     * Está vacía si !hasErrors()
      */
     @SuppressWarnings("unused")
     public List<String> getErrors() {
@@ -65,10 +56,9 @@ public final class DentalValidationResult {
 
     /**
      * Retorna un único mensaje combinado (útil para mostrar en JOptionPane, etc.).
-     * Si no hay errores, retorna "Validación exitosa".
      */
     public String getMessage() {
-        if (valid) {
+        if (hasErrors()) {               // ← ajustado para usar el nuevo método
             return "Validación exitosa";
         }
         if (errors.size() == 1) {
@@ -82,7 +72,7 @@ public final class DentalValidationResult {
      */
     @SuppressWarnings("unused")
     public String getHtmlMessage() {
-        if (valid) {
+        if (hasErrors()) {               // ← ajustado
             return "<html><font color='green'>Validación exitosa</font></html>";
         }
         return "<html><font color='red'>" + "Errores de validación:<br>• " +

@@ -32,6 +32,10 @@ new FormModel {
 			} )
 			add( new FormComponent( "javax.swing.JComboBox" ) {
 				name: "denticionComboBox"
+				"model": new javax.swing.DefaultComboBoxModel {
+					selectedItem: "String"
+					addElement( "String" )
+				}
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 2
 				"hAlign": 2

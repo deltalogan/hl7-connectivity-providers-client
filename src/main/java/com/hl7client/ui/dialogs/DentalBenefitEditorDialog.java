@@ -250,7 +250,7 @@ public class DentalBenefitEditorDialog extends JDialog {
             }
         } else {
             DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
-            if (!validation.isValid()) {
+            if (validation.hasErrors()) {
                 msg.append("<b>Error de combinación:</b><br>").append(validation.getMessage());
                 color = Color.RED;
             } else if (len > Hl7Constants.MAX_LENGTH_ODONTOLOGIA) {
@@ -290,7 +290,7 @@ public class DentalBenefitEditorDialog extends JDialog {
 
         if (piece != null) {
             DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
-            if (!validation.isValid()) return false;
+            if (validation.hasErrors()) return false;
         } else if (!surfaces.isEmpty()) {
             return false;
         }
@@ -312,7 +312,7 @@ public class DentalBenefitEditorDialog extends JDialog {
 
             if (piece != null) {
                 DentalValidationResult validation = DentalSurfaceMatrix.validate(piece, surfaces);
-                if (!validation.isValid()) {
+                if (validation.hasErrors()) {
                     msg.append("• ").append(validation.getMessage().replace("\n", "<br>• ")).append("<br>");
                 }
             } else if (!surfaces.isEmpty()) {
@@ -437,7 +437,7 @@ public class DentalBenefitEditorDialog extends JDialog {
         lengthPreviewLabel = new JLabel();
         benefitLabel = new JLabel();
         benefitTextField = new JTextField();
-        denticionComboBox = new JComboBox();
+        denticionComboBox = new JComboBox<>();
         formatHintLabel = new JLabel();
         toothSelectionScrollPane = new JScrollPane();
         toothSelectionTable = new JTable();
@@ -471,6 +471,11 @@ public class DentalBenefitEditorDialog extends JDialog {
         contentPane.add(benefitTextField, new GridBagConstraints(1, 1, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 5, 0), 0, 0));
+
+        //---- denticionComboBox ----
+        denticionComboBox.setModel(new DefaultComboBoxModel<>(new String[] {
+            "String"
+        }));
         contentPane.add(denticionComboBox, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0,
             GridBagConstraints.WEST, GridBagConstraints.VERTICAL,
             new Insets(0, 0, 5, 5), 0, 0));
@@ -562,7 +567,7 @@ public class DentalBenefitEditorDialog extends JDialog {
     private JLabel lengthPreviewLabel;
     private JLabel benefitLabel;
     private JTextField benefitTextField;
-    private JComboBox denticionComboBox;
+    private JComboBox<String> denticionComboBox;
     private JLabel formatHintLabel;
     private JScrollPane toothSelectionScrollPane;
     private JTable toothSelectionTable;
