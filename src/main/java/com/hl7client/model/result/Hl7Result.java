@@ -81,6 +81,7 @@ public final class Hl7Result<T> {
         return status == Hl7Status.PARTIAL;
     }
 
+    @SuppressWarnings({"unused"})
     public boolean isRejected() {
         return status == Hl7Status.REJECTED;
     }

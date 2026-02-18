@@ -20,6 +20,7 @@ public class CancelacionCabecera {
 
     // getters
 
+    @SuppressWarnings({"unused"})
     public String getTransacAlta() {
         return transacAlta;
     }
@@ -36,31 +37,93 @@ public class CancelacionCabecera {
         return rechaCabeDeno;
     }
 
+    @SuppressWarnings({"unused"})
     public String getApeNom() {
         return apeNom;
     }
 
+    @SuppressWarnings({"unused"})
     public String getGravado() {
         return gravado;
     }
 
+    @SuppressWarnings({"unused"})
     public String getPlanCodi() {
         return planCodi;
     }
 
+    @SuppressWarnings({"unused"})
     public String getPmi() {
         return pmi;
     }
 
+    @SuppressWarnings({"unused"})
     public String getSexo() {
         return sexo;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getEdad() {
         return edad;
     }
 
+    @SuppressWarnings({"unused"})
     public String getLeyimp() {
         return leyimp;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setTransacAlta(String transacAlta) {
+        this.transacAlta = transacAlta;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setTransac(Long transac) {
+        this.transac = transac;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setRechaCabecera(Integer rechaCabecera) {
+        this.rechaCabecera = rechaCabecera;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setRechaCabeDeno(String rechaCabeDeno) {
+        this.rechaCabeDeno = rechaCabeDeno;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setApeNom(String apeNom) {
+        this.apeNom = apeNom;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setGravado(String gravado) {
+        this.gravado = gravado;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setPlanCodi(String planCodi) {
+        this.planCodi = planCodi;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setPmi(String pmi) {
+        this.pmi = pmi;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setSexo(String sexo) {
+        this.sexo = sexo;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setEdad(Integer edad) {
+        this.edad = edad;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setLeyimp(String leyimp) {
+        this.leyimp = leyimp;
     }
 }

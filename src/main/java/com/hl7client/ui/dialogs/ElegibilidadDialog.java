@@ -173,7 +173,7 @@ public class ElegibilidadDialog extends JDialog {
         request.setOriMatri(textValue(oriMatriTextField));
         request.setAutoriz(
                 autorizTextField.getText().isEmpty()
-                        ? 0
+                        ? Integer.valueOf(0)
                         : intValue(autorizTextField)
         );
         request.setRechaExt(intValue(rechaExtTextField));

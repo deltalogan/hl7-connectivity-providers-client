@@ -14,6 +14,7 @@ public class RegistracionResponse {
         return cabecera;
     }
 
+    @SuppressWarnings({"unused"})
     public void setCabecera(RegistracionCabecera cabecera) {
         this.cabecera = cabecera;
     }
@@ -22,6 +23,7 @@ public class RegistracionResponse {
         return detalle;
     }
 
+    @SuppressWarnings({"unused"})
     public void setDetalle(RegistracionDetalle[] detalle) {
         this.detalle = detalle;
     }

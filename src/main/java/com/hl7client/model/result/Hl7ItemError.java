@@ -26,6 +26,7 @@ public final class Hl7ItemError {
         return message;
     }
 
+    @SuppressWarnings({"unused"})
     public Hl7ItemErrorOrigin getOrigin() {
         return origin;
     }

@@ -12,6 +12,7 @@ public class CancelacionResponse {
         return cabecera;
     }
 
+    @SuppressWarnings({"unused"})
     public void setCabecera(CancelacionCabecera cabecera) {
         this.cabecera = cabecera;
     }
@@ -20,6 +21,7 @@ public class CancelacionResponse {
         return detalle;
     }
 
+    @SuppressWarnings({"unused"})
     public void setDetalle(CancelacionDetalle[] detalle) {
         this.detalle = detalle;
     }

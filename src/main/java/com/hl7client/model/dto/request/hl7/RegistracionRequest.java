@@ -66,62 +66,77 @@ public class RegistracionRequest {
     // GETTERS
     // ===============================
 
+    @SuppressWarnings({"unused"})
     public String getModo() {
         return modo;
     }
 
+    @SuppressWarnings({"unused"})
     public String getCreden() {
         return creden;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getTipo() {
         return tipo;
     }
 
+    @SuppressWarnings({"unused"})
     public String getAlta() {
         return alta;
     }
 
+    @SuppressWarnings({"unused"})
     public String getFecdif() {
         return fecdif;
     }
 
+    @SuppressWarnings({"unused"})
     public Manual getManual() {
         return manual;
     }
 
+    @SuppressWarnings({"unused"})
     public Manual getConsulta() {
         return consulta;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getTicketExt() {
         return ticketExt;
     }
 
+    @SuppressWarnings({"unused"})
     public String getTermId() {
         return termId;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getInterNro() {
         return interNro;
     }
 
+    @SuppressWarnings({"unused"})
     public String getCuit() {
         return cuit;
     }
 
+    @SuppressWarnings({"unused"})
     public String getOriMatri() {
         return oriMatri;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getAutoriz() {
         return autoriz;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getRechaExt() {
         return rechaExt;
     }
 
+    @SuppressWarnings({"unused"})
     public String getIcd() {
         return icd;
     }
@@ -134,42 +149,52 @@ public class RegistracionRequest {
         return param2;
     }
 
+    @SuppressWarnings({"unused"})
     public String getParam3() {
         return param3;
     }
 
+    @SuppressWarnings({"unused"})
     public String getTipoEfector() {
         return tipoEfector;
     }
 
+    @SuppressWarnings({"unused"})
     public String getIdEfector() {
         return idEfector;
     }
 
+    @SuppressWarnings({"unused"})
     public String getTipoPrescr() {
         return tipoPrescr;
     }
 
+    @SuppressWarnings({"unused"})
     public String getIdPrescr() {
         return idPrescr;
     }
 
+    @SuppressWarnings({"unused"})
     public String getMsgId() {
         return msgId;
     }
 
+    @SuppressWarnings({"unused"})
     public String getAckacept() {
         return ackacept;
     }
 
+    @SuppressWarnings({"unused"})
     public String getAckackapl() {
         return ackackapl;
     }
 
+    @SuppressWarnings({"unused"})
     public String getTipoMensaje() {
         return tipoMensaje;
     }
 
+    @SuppressWarnings({"unused"})
     public Boolean getPowerBuilder() {
         return powerBuilder;
     }

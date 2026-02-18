@@ -31,58 +31,72 @@ public class CancelacionRequest {
 
     // ---------- GETTERS ----------
 
+    @SuppressWarnings({"unused"})
     public String getModo() {
         return modo;
     }
 
+    @SuppressWarnings({"unused"})
     public Long getCreden() {
         return creden;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getTipo() {
         return tipo;
     }
 
+    @SuppressWarnings({"unused"})
     public String getAlta() {
         return alta;
     }
 
+    @SuppressWarnings({"unused"})
     public Manual getManual() {
         return manual;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getTicketExt() {
         return ticketExt;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getCancelCab() {
         return cancelCab;
     }
 
+    @SuppressWarnings({"unused"})
     public String getCancelModo() {
         return cancelModo;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getErrorExt() {
         return errorExt;
     }
 
+    @SuppressWarnings({"unused"})
     public String getTermId() {
         return termId;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getInterNro() {
         return interNro;
     }
 
+    @SuppressWarnings({"unused"})
     public Long getCuit() {
         return cuit;
     }
 
+    @SuppressWarnings({"unused"})
     public String getParam1() {
         return param1;
     }
 
+    @SuppressWarnings({"unused"})
     public String getParam2() {
         return param2;
     }
@@ -139,5 +153,10 @@ public class CancelacionRequest {
 
     public void setParam2(String param2) {
         this.param2 = param2;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setCancelModo(String cancelModo) {
+        this.cancelModo = cancelModo;
     }
 }

@@ -341,7 +341,9 @@ public class DentalBenefitEditorDialog extends JDialog {
             onAcceptCallback.accept(result);
         }
 
+        @SuppressWarnings({"unused"})
         String piezaDesc = (piece != null) ? piece.getFdiCode() : "Ninguna (prestación general)";
+        @SuppressWarnings({"unused"})
         String superficiesDesc = surfaces.isEmpty()
                 ? "Ninguna (válido)"
                 : surfaces.stream().map(Enum::name).sorted().collect(Collectors.joining(", "));

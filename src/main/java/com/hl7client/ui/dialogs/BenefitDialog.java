@@ -174,6 +174,23 @@ public class BenefitDialog extends JDialog {
     private void openMedicalEditor(BenefitItem editing) {
         int remaining = tableModel.getRemainingChars(editing);
 
+        JDialog editorDialog = getJDialog(editing, remaining);
+
+        // Casteo clásico (Java 8 compatible)
+        if (editing instanceof MedicalBenefitItem) {
+            MedicalBenefitItem mbi = (MedicalBenefitItem) editing;
+
+            // Casteo clásico también para el editor
+            if (editorDialog instanceof MedicalBenefitEditorDialog) {
+                MedicalBenefitEditorDialog normalEditor = (MedicalBenefitEditorDialog) editorDialog;
+                normalEditor.setInitialValues(mbi.getQuantityPerType(), mbi.getBenefitCode());
+            }
+        }
+
+        editorDialog.setVisible(true);
+    }
+
+    private JDialog getJDialog(BenefitItem editing, int remaining) {
         JDialog editorDialog;
         java.util.function.Consumer<BenefitItem> callback = added -> {
             if (editing == null) {
@@ -190,19 +207,7 @@ public class BenefitDialog extends JDialog {
         } else {
             editorDialog = new MedicalBenefitEditorDialog(this, remaining, callback);
         }
-
-        // Casteo clásico (Java 8 compatible)
-        if (editing instanceof MedicalBenefitItem) {
-            MedicalBenefitItem mbi = (MedicalBenefitItem) editing;
-
-            // Casteo clásico también para el editor
-            if (editorDialog instanceof MedicalBenefitEditorDialog) {
-                MedicalBenefitEditorDialog normalEditor = (MedicalBenefitEditorDialog) editorDialog;
-                normalEditor.setInitialValues(mbi.getQuantityPerType(), mbi.getBenefitCode());
-            }
-        }
-
-        editorDialog.setVisible(true);
+        return editorDialog;
     }
 
     private void openDentalEditor(DentalBenefit editing) {

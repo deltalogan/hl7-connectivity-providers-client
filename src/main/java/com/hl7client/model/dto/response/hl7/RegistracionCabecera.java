@@ -31,6 +31,7 @@ public class RegistracionCabecera {
 
     // ---------- GETTERS ----------
 
+    @SuppressWarnings({"unused"})
     public String getTransacAlta() {
         return transacAlta;
     }
@@ -51,6 +52,7 @@ public class RegistracionCabecera {
         return apeNom;
     }
 
+    @SuppressWarnings({"unused"})
     public String getGravado() {
         return gravado;
     }
@@ -67,10 +69,12 @@ public class RegistracionCabecera {
         return sexo;
     }
 
+    @SuppressWarnings({"unused"})
     public String getSexoAuto() {
         return sexoAuto;
     }
 
+    @SuppressWarnings({"unused"})
     public String getGeneroAuto() {
         return generoAuto;
     }
@@ -79,23 +83,113 @@ public class RegistracionCabecera {
         return edad;
     }
 
+    @SuppressWarnings({"unused"})
     public String getLeyimp() {
         return leyimp;
     }
 
+    @SuppressWarnings({"unused"})
     public String getIcdDeno() {
         return icdDeno;
     }
 
+    @SuppressWarnings({"unused"})
     public String getNomPrestad() {
         return nomPrestad;
     }
 
+    @SuppressWarnings({"unused"})
     public String getSucursal() {
         return sucursal;
     }
 
+    @SuppressWarnings({"unused"})
     public Integer getAutoriz() {
         return autoriz;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setTransacAlta(String transacAlta) {
+        this.transacAlta = transacAlta;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setTransac(Long transac) {
+        this.transac = transac;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setRechaCabecera(Integer rechaCabecera) {
+        this.rechaCabecera = rechaCabecera;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setRechaCabeDeno(String rechaCabeDeno) {
+        this.rechaCabeDeno = rechaCabeDeno;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setApeNom(String apeNom) {
+        this.apeNom = apeNom;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setGravado(String gravado) {
+        this.gravado = gravado;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setPlanCodi(String planCodi) {
+        this.planCodi = planCodi;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setPmi(String pmi) {
+        this.pmi = pmi;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setSexo(String sexo) {
+        this.sexo = sexo;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setSexoAuto(String sexoAuto) {
+        this.sexoAuto = sexoAuto;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setGeneroAuto(String generoAuto) {
+        this.generoAuto = generoAuto;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setEdad(Integer edad) {
+        this.edad = edad;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setLeyimp(String leyimp) {
+        this.leyimp = leyimp;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setIcdDeno(String icdDeno) {
+        this.icdDeno = icdDeno;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setNomPrestad(String nomPrestad) {
+        this.nomPrestad = nomPrestad;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setSucursal(String sucursal) {
+        this.sucursal = sucursal;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setAutoriz(Integer autoriz) {
+        this.autoriz = autoriz;
     }
 }

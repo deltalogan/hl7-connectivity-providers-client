@@ -23,4 +23,19 @@ public class LoginResponse {
     public Prestador getModelEspecifico() {
         return modelEspecifico;
     }
+
+    @SuppressWarnings({"unused"})
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setExp(String exp) {
+        this.exp = exp;
+    }
+
+    @SuppressWarnings({"unused"})
+    public void setModelEspecifico(Prestador modelEspecifico) {
+        this.modelEspecifico = modelEspecifico;
+    }
 }

@@ -6,5 +6,6 @@ public enum Hl7ItemErrorOrigin {
     DETALLE,
 
     /** Error en subdetalle (por ejemplo prácticas, insumos, etc.) */
+    @SuppressWarnings({"unused"})
     SUBDETALLE
 }

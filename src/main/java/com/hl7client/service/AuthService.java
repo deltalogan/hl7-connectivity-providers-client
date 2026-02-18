@@ -26,6 +26,7 @@ public class AuthService implements AuthRefresher {
         this.apiClient = new ApiClient(this);
     }
 
+    @SuppressWarnings({"unused"})
     public AuthService(ApiClient apiClient) {
         this.apiClient = Objects.requireNonNull(apiClient);
     }

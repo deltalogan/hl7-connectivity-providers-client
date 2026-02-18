@@ -2,11 +2,11 @@ package com.hl7client.model.dto.request.auth;
 
 public class DeviceRequest {
 
-    private String messagingid;
-    private String deviceid;
-    private String devicename;
-    private boolean bloqueado;
-    private boolean recordar;
+    private final String messagingid;
+    private final String deviceid;
+    private final String devicename;
+    private final boolean bloqueado;
+    private final boolean recordar;
 
     public DeviceRequest(String messagingid, String deviceid, String devicename) {
         this.messagingid = messagingid;
